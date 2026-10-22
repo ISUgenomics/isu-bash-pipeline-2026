@@ -1,5 +1,13 @@
 # Running commands and making a script of the commands run
 
+## Some questions:
+1. Have you used `VSCode server` on `Nova OnDemand` before?
+2. Are you comfortable with basic bash commands like `ls`, `cd`, `mkdir`, `rm`, `cat`, `echo`?
+3. Have you written simple bash scripts combining several steps into a pipeline before?
+4. Are you comfortable with using bash variables and loops?
+5. Are you comfortable with submitting batch jobs to a cluster? (is this question necessary?)
+
+
 ### What is a job?
 
 - A job is a command or a script that is run on the command line.
