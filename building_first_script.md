@@ -37,63 +37,75 @@ bio_sample_01_R2.fastq.gz  bio_sample_02_R2.fastq.gz  bio_sample_03_R2.fastq.gz 
 </pre>
 </details>
 
-### Checking the quality of the reads using FastQC
+### Quality control and trimming of the reads using fastp
 
 #### One file
 
 ```bash
 module purge
-module load fastqc
-mkdir -p 02_fastqc
-fastqc 01_data/bio_sample_01_R1.fastq.gz -o 02_fastqc/
+module load fastp
+mkdir -p 02_fastp
+fastp \
+  -i 01_data/bio_sample_01_R1.fastq.gz \
+  -o 02_fastp/bio_sample_01_R1.trimmed.fastq.gz \
+  -h 02_fastp/bio_sample_01_R1.html \
+  -j 02_fastp/bio_sample_01_R1.json
 ```
 -p flag is used to create the directory if it does not exist.
 
-Once the program is run, it will create a directory called `02_fastqc` and put the output files in it.
+- `-i` is the input FASTQ file and `-o` is the output (quality filtered and adapter trimmed) FASTQ file.
+- `-h` writes the HTML quality report and `-j` writes the JSON report.
+
+Once the program is run, it will create a directory called `02_fastp` and put the output files in it.
 
 ```bash
-ls 02_fastqc
+ls 02_fastp
 ```
 
 <details>
 <summary>Output</summary>
 <pre>
-bio_sample_01_R1_fastqc.html  bio_sample_01_R1_fastqc.zip
+bio_sample_01_R1.html  bio_sample_01_R1.json  bio_sample_01_R1.trimmed.fastq.gz
 </pre>
 </details>
 
 Remove the folders created
 
 ```bash
-rm -r 02_fastqc
+rm -r 02_fastp
 ```
 
-Open `00_scripts/01_fastqc.sh` in the script window. 
+Open `00_scripts/01_fastp.sh` in the script window. 
 
 ```bash
 module purge
-module load fastqc
-mkdir -p 02_fastqc logs
-fastqc 01_data/bio_sample_01_R1.fastq.gz -o 02_fastqc/ > logs/01_fastqc.log 2>&1
+module load fastp
+mkdir -p 02_fastp logs
+fastp \
+  -i 01_data/bio_sample_01_R1.fastq.gz \
+  -o 02_fastp/bio_sample_01_R1.trimmed.fastq.gz \
+  -h 02_fastp/bio_sample_01_R1.html \
+  -j 02_fastp/bio_sample_01_R1.json \
+  > logs/01_fastp.log 2>&1
 ```
 
 - Explanation of the command in the script:
-  - `fastqc 01_data/bio_sample_01_R1.fastq.gz -o 02_fastqc/` runs FastQC on the input file and writes the results to the `02_fastqc/` directory.
-  - `> logs/01_fastqc.log` redirects standard output (stdout, file descriptor 1) to the log file, overwriting it if it exists.
-  - `2>&1` redirects standard error (stderr, file descriptor 2) to the same destination as stdout, so both stdout and stderr end up in `logs/01_fastqc.log`.
+  - `fastp -i ... -o ... -h ... -j ...` runs fastp on the input file and writes the trimmed reads and the HTML/JSON reports to the `02_fastp/` directory.
+  - `> logs/01_fastp.log` redirects standard output (stdout, file descriptor 1) to the log file, overwriting it if it exists.
+  - `2>&1` redirects standard error (stderr, file descriptor 2) to the same destination as stdout, so both stdout and stderr end up in `logs/01_fastp.log`. fastp writes its progress messages to stderr, so this is needed to capture them.
   - This pattern is useful to capture all program messages for troubleshooting and record-keeping. Ensure `logs/` exists (we created it with `mkdir -p logs`).
-  - Tip: If you want to see the output live and also save it, you can use `tee`, e.g., `... 2>&1 | tee logs/01_fastqc.log`.
+  - Tip: If you want to see the output live and also save it, you can use `tee`, e.g., `... 2>&1 | tee logs/01_fastp.log`.
 
 **Make the script an executable file**
 
 ```bash
-chmod +x 00_scripts/01_fastqc.sh
+chmod +x 00_scripts/01_fastp.sh
 ```
 
 **Run the script**
 
 ```bash
-time ./00_scripts/01_fastqc.sh 
+time ./00_scripts/01_fastp.sh 
 ```
 
 **Output**
@@ -424,3 +436,15 @@ user    2m53.930s
 sys     0m6.853s
 </pre>
 </details>
+
+
+In the third workshop “Introduction to Pipeline Development” you will learn to:
+
+Convert commands into reusable Bash scripts
+Use variables, loops, paths, and naming conventions
+Organize inputs, outputs, scripts, and log files
+Build reproducible multi-step pipelines
+Add error handling and logging
+Parallelize independent tasks with GNU Parallel
+Integrate scripts and pipelines with Slurm
+Match pipeline concurrency to requested HPC resources
