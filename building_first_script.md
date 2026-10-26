@@ -139,99 +139,79 @@ done
 - `01_data/*.fastq.gz` expands (globs) to all FASTQ files in the `01_data/` directory.
 - `$file` is a shell variable that holds the current filename; `echo` prints text to the terminal.
 
-**Run `FastQC` on all files in `01_data/`**
+**Run `fastp` on all files in `01_data/`**
 
 ```bash
 module purge
-module load fastqc
+module load fastp
 
-mkdir -p 03_fastqc_loop
+mkdir -p 03_fastp_loop logs
 
 for file in 01_data/*.fastq.gz
 do
-  echo "Running FastQC on: $file"
-  fastqc $file -o 03_fastqc_loop/ > logs/02_fastqc_loop.log 2>&1
+  sample_id=$(basename "$file" .fastq.gz)
+  echo "Running fastp on: $sample_id"
+  fastp \
+    -i "$file" \
+    -o 03_fastp_loop/${sample_id}.trimmed.fastq.gz \
+    -h 03_fastp_loop/${sample_id}.html \
+    -j 03_fastp_loop/${sample_id}.json \
+    > logs/02_fastp_loop.log 2>&1
 done
 ```
 
-Save this script as `02_fastqc_loop.sh` in `00_scripts` directory.
+- `basename "$file" .fastq.gz` strips the directory and the `.fastq.gz` suffix, giving e.g. `bio_sample_01_R1`. We need this because fastp does not name its reports after the input: without unique `-h`/`-j` names every file would overwrite the same `fastp.html`/`fastp.json`.
+
+Save this script as `02_fastp_loop.sh` in `00_scripts` directory.
 
 Make it executable:
 
 ```bash
-chmod +x 00_scripts/02_fastqc_loop.sh
+chmod +x 00_scripts/02_fastp_loop.sh
 ```
 
 **Run the script**
 
 ```bash
-time ./00_scripts/02_fastqc_loop.sh
+time ./00_scripts/02_fastp_loop.sh
 ```
 
 <details>
 <summary>Output</summary>
 <pre>
-Running FastQC on: 01_data/bio_sample_01_R1.fastq.gz
-Running FastQC on: 01_data/bio_sample_01_R2.fastq.gz
-Running FastQC on: 01_data/bio_sample_02_R1.fastq.gz
-Running FastQC on: 01_data/bio_sample_02_R2.fastq.gz
-Running FastQC on: 01_data/bio_sample_03_R1.fastq.gz
-Running FastQC on: 01_data/bio_sample_03_R2.fastq.gz
-Running FastQC on: 01_data/bio_sample_04_R1.fastq.gz
-Running FastQC on: 01_data/bio_sample_04_R2.fastq.gz
-Running FastQC on: 01_data/bio_sample_05_R1.fastq.gz
-Running FastQC on: 01_data/bio_sample_05_R2.fastq.gz
+Running fastp on: bio_sample_01_R1
+Running fastp on: bio_sample_01_R2
+Running fastp on: bio_sample_02_R1
+Running fastp on: bio_sample_02_R2
+Running fastp on: bio_sample_03_R1
+Running fastp on: bio_sample_03_R2
+Running fastp on: bio_sample_04_R1
+Running fastp on: bio_sample_04_R2
+Running fastp on: bio_sample_05_R1
+Running fastp on: bio_sample_05_R2
 
-real    1m12.560s
-user    1m37.585s
-sys     0m2.792s
+real    TODO
+user    TODO
+sys     TODO
 </pre>
 </details>
 
 Check the log file:
 
 ```bash
-cat logs/02_fastqc_loop.log
+cat logs/02_fastp_loop.log
 ```
 
-<details>
-<summary>Output</summary>
-<pre>
-Started analysis of bio_sample_05_R2.fastq.gz
-Approx 5% complete for bio_sample_05_R2.fastq.gz
-Approx 10% complete for bio_sample_05_R2.fastq.gz
-Approx 15% complete for bio_sample_05_R2.fastq.gz
-Approx 20% complete for bio_sample_05_R2.fastq.gz
-Approx 25% complete for bio_sample_05_R2.fastq.gz
-Approx 30% complete for bio_sample_05_R2.fastq.gz
-Approx 35% complete for bio_sample_05_R2.fastq.gz
-Approx 40% complete for bio_sample_05_R2.fastq.gz
-Approx 45% complete for bio_sample_05_R2.fastq.gz
-Approx 50% complete for bio_sample_05_R2.fastq.gz
-Approx 55% complete for bio_sample_05_R2.fastq.gz
-Approx 60% complete for bio_sample_05_R2.fastq.gz
-Approx 65% complete for bio_sample_05_R2.fastq.gz
-Approx 70% complete for bio_sample_05_R2.fastq.gz
-Approx 75% complete for bio_sample_05_R2.fastq.gz
-Approx 80% complete for bio_sample_05_R2.fastq.gz
-Approx 85% complete for bio_sample_05_R2.fastq.gz
-Approx 90% complete for bio_sample_05_R2.fastq.gz
-Approx 95% complete for bio_sample_05_R2.fastq.gz
-Approx 100% complete for bio_sample_05_R2.fastq.gz
-Analysis complete for bio_sample_05_R2.fastq.gz
-</pre>
-</details>
-
-The log file shows the progress of the FastQC analysis for just the last file.
+The log file only contains the fastp summary (read counts before/after filtering, adapter trimming, duplication rate) for the last file, because each iteration overwrites the log with `>`.
 
 Let us now make sure that we have a log file for each file. 
 
 ```bash
 module purge
-module load fastqc
+module load fastp
 
 INPUT_DIR=01_data
-OUTPUT_DIR=04_fastqc_loop_samplename
+OUTPUT_DIR=04_fastp_loop_samplename
 LOG_DIR=logs
 
 mkdir -p $OUTPUT_DIR $LOG_DIR
@@ -239,135 +219,133 @@ mkdir -p $OUTPUT_DIR $LOG_DIR
 for file in $INPUT_DIR/*.fastq.gz 
 do  
   sample_id=$(basename "$file" .fastq.gz)
-  echo "Running FastQC on: $sample_id"
-  fastqc $file -o $OUTPUT_DIR/ > $LOG_DIR/03_fastqc_loop_$sample_id.log 2>&1
+  echo "Running fastp on: $sample_id"
+  fastp \
+    -i $file \
+    -o $OUTPUT_DIR/${sample_id}.trimmed.fastq.gz \
+    -h $OUTPUT_DIR/${sample_id}.html \
+    -j $OUTPUT_DIR/${sample_id}.json \
+    > $LOG_DIR/03_fastp_loop_$sample_id.log 2>&1
 done
 ```
 
 Using shell variables in the loop helps to make the script more readable, maintainable, and reusable.
 
-Save this script as `03_fastqc_loop_samplename.sh` in `00_scripts` directory.
+Save this script as `03_fastp_loop_samplename.sh` in `00_scripts` directory.
 
 Make it executable:
 
 ```bash
-chmod +x 00_scripts/03_fastqc_loop_samplename.sh
+chmod +x 00_scripts/03_fastp_loop_samplename.sh
 ```
 
 **Run the script:**
 
 ```bash
-time ./00_scripts/03_fastqc_loop_samplename.sh
+time ./00_scripts/03_fastp_loop_samplename.sh
 ```
 
 <details>
 <summary>Output</summary>
 <pre>
-Running FastQC on: bio_sample_01_R1
-Running FastQC on: bio_sample_01_R2
-Running FastQC on: bio_sample_02_R1
-Running FastQC on: bio_sample_02_R2
-Running FastQC on: bio_sample_03_R1
-Running FastQC on: bio_sample_03_R2
-Running FastQC on: bio_sample_04_R1
-Running FastQC on: bio_sample_04_R2
-Running FastQC on: bio_sample_05_R1
-Running FastQC on: bio_sample_05_R2
+Running fastp on: bio_sample_01_R1
+Running fastp on: bio_sample_01_R2
+Running fastp on: bio_sample_02_R1
+Running fastp on: bio_sample_02_R2
+Running fastp on: bio_sample_03_R1
+Running fastp on: bio_sample_03_R2
+Running fastp on: bio_sample_04_R1
+Running fastp on: bio_sample_04_R2
+Running fastp on: bio_sample_05_R1
+Running fastp on: bio_sample_05_R2
 
-real    1m11.971s
-user    1m31.266s
-sys     0m3.074s
+real    TODO
+user    TODO
+sys     TODO
 </pre>
 </details>
 
 Check the log files:
 
 ```bash
-less logs/*bio_sample*log
+less logs/03_fastp_loop_bio_sample*log
 ```
 
 Using `less` we can view the contents of the log files. To move from one file to the next, use the `:n` command within `less`. To move to the previous file, use the `:p` command.
 
-To check if all files have been processed, we can use the `grep` command.
+To check if all files have been processed, we can use the `grep` command. fastp prints a final line with the run time when it finishes successfully.
 
 ```bash
-grep "Analysis complete" logs/*bio_sample*log
+grep "time used" logs/03_fastp_loop_bio_sample*log
 ```
 
 <details>
 <summary>Output</summary>
 <pre>
-logs/02_fastqc_loop_bio_sample_01_R1.log:Analysis complete for bio_sample_01_R1.fastq.gz
-logs/02_fastqc_loop_bio_sample_01_R2.log:Analysis complete for bio_sample_01_R2.fastq.gz
-logs/02_fastqc_loop_bio_sample_02_R1.log:Analysis complete for bio_sample_02_R1.fastq.gz
-logs/02_fastqc_loop_bio_sample_02_R2.log:Analysis complete for bio_sample_02_R2.fastq.gz
-logs/02_fastqc_loop_bio_sample_03_R1.log:Analysis complete for bio_sample_03_R1.fastq.gz
-logs/02_fastqc_loop_bio_sample_03_R2.log:Analysis complete for bio_sample_03_R2.fastq.gz
-logs/02_fastqc_loop_bio_sample_04_R1.log:Analysis complete for bio_sample_04_R1.fastq.gz
-logs/02_fastqc_loop_bio_sample_04_R2.log:Analysis complete for bio_sample_04_R2.fastq.gz
-logs/02_fastqc_loop_bio_sample_05_R1.log:Analysis complete for bio_sample_05_R1.fastq.gz
-logs/02_fastqc_loop_bio_sample_05_R2.log:Analysis complete for bio_sample_05_R2.fastq.gz
+logs/03_fastp_loop_bio_sample_01_R1.log:fastp v&lt;version&gt;, time used: &lt;N&gt; seconds
+...
+(one line per sample file; TODO: paste real output)
 </pre>
 </details>
 
 #### Multiple files (GNU Parallel)
 
-Let us now use GNU Parallel to run the FastQC analysis on all files in parallel.
+Let us now use GNU Parallel to run fastp on all files in parallel.
 The first step is go for a dry run to see what commands will be executed.
 
 ```bash
 module load parallel 
-mkdir -p 05_fastqc_parallel
-parallel --dry-run -j 10 fastqc {} -o 05_fastqc_parallel/ ::: 01_data/*.fastq.gz
+mkdir -p 05_fastp_parallel
+parallel --dry-run -j 10 'fastp -i {} -o 05_fastp_parallel/{/..}.trimmed.fastq.gz -h 05_fastp_parallel/{/..}.html -j 05_fastp_parallel/{/..}.json -w 1' ::: 01_data/*.fastq.gz
 ```
 
-- `parallel --dry-run -j 10 fastqc {} -o 05_fastqc_parallel/ ::: 01_data/*.fastq.gz`
-  - `--dry-run` prints the commands that would be executed, without running them. Use this to verify first.
-  - `-j 10` means run up to 10 jobs at the same time (choose based on cores available to you).
-  - `fastqc {}` is the command template; `{}` will be replaced by each input filename.
-  - `-o 05_fastqc_parallel/` sends FastQC outputs into that directory.
-  - `:::` introduces the list of inputs to feed to GNU Parallel; here the shell expands `01_data/*.fastq.gz` to all matching files.
+- `--dry-run` prints the commands that would be executed, without running them. Use this to verify first.
+- `-j 10` means run up to 10 jobs at the same time (choose based on cores available to you).
+- The quoted string is the command template; `{}` will be replaced by each input filename.
+- `{/..}` is a GNU Parallel modifier: it removes the directory and two extensions, so `01_data/bio_sample_01_R1.fastq.gz` becomes `bio_sample_01_R1`.
+- `-w 1` tells fastp to use one worker thread per job (the default is 3), so 10 parallel jobs do not oversubscribe the cores.
+- `:::` introduces the list of inputs to feed to GNU Parallel; here the shell expands `01_data/*.fastq.gz` to all matching files.
 
 To actually run the commands (not just show them), remove `--dry-run`:
 
 ```bash
 module purge
 module load parallel
-module load fastqc 
+module load fastp 
 
-mkdir -p 05_fastqc_parallel
+mkdir -p 05_fastp_parallel logs
 
 parallel -j10 \
-  'fastqc {1} -o 05_fastqc_parallel/ > logs/04_fastqc_parallel_{1/.}.log 2>&1' \
+  'fastp -i {1} -o 05_fastp_parallel/{1/..}.trimmed.fastq.gz -h 05_fastp_parallel/{1/..}.html -j 05_fastp_parallel/{1/..}.json -w 1 > logs/04_fastp_parallel_{1/..}.log 2>&1' \
   ::: 01_data/*.fastq.gz
 ```
 
 - The trailing `\` characters are line continuations so the long command is split across multiple lines for readability.
-- Quotes `'...'` keep the whole FastQC template as one string so that GNU Parallel, not your shell, substitutes `{1}` and `{1/.}`.
+- Quotes `'...'` keep the whole fastp template as one string so that GNU Parallel, not your shell, substitutes `{1}` and `{1/..}`.
 - `{1}` is the first input argument (each file matched by the glob). With a single input source, `{}` and `{1}` are equivalent.
-- `{1/.}` is a GNU Parallel filename modifier: it expands to the basename of the first input with the final extension removed (and without the directory). This lets us name per-file logs like `logs/02_fastqc_parallel_bio_sample_01_R1.log`.
-- `> logs/02_fastqc_parallel_{1/.}.log 2>&1` writes both stdout and stderr of each FastQC run to a separate log file derived from the input name.
+- `{1/..}` expands to the basename of the first input with the directory and both extensions (`.fastq.gz`) removed. This lets us name per-file outputs and logs like `logs/04_fastp_parallel_bio_sample_01_R1.log`.
+- `> logs/04_fastp_parallel_{1/..}.log 2>&1` writes both stdout and stderr of each fastp run to a separate log file derived from the input name.
 
-Add the above script to `00_scripts/04_fastqc_parallel.sh`.
+Add the above script to `00_scripts/04_fastp_parallel.sh`.
 
 Make it executable:
 
 ```bash
-chmod +x 00_scripts/04_fastqc_parallel.sh
+chmod +x 00_scripts/04_fastp_parallel.sh
 ```
 
 **Run the script**
 
 ```bash
-time ./00_scripts/04_fastqc_parallel.sh
+time ./00_scripts/04_fastp_parallel.sh
 ```
 
 <details>
 <summary>Output</summary>
 <pre>
-real    0m26.453s
-user    2m1.143s
-sys     0m3.962s
+real    TODO
+user    TODO
+sys     TODO
 </pre>
 </details>
 
@@ -393,7 +371,7 @@ set -euo pipefail # error handling:
 INPUT_DIR="01_data"
 
 # Output directory
-OUTPUT_DIR="06_fastqc_parallel_improved"
+OUTPUT_DIR="06_fastp_parallel_improved"
 
 # Log directory
 LOG_DIR="logs"
@@ -406,34 +384,38 @@ export OUTPUT_DIR LOG_DIR INPUT_DIR
 
 # Load required modules
 module load parallel
-module load fastqc
+module load fastp
 
-# Run FastQC
+# Run fastp
 parallel -j10 \
-  'fastqc "{1}" -o "$OUTPUT_DIR/" > "$LOG_DIR/05_fastqc_parallel_improved_{1/.}.log" 2>&1' \
+  'fastp -i "{1}" \
+     -o "$OUTPUT_DIR/{1/..}.trimmed.fastq.gz" \
+     -h "$OUTPUT_DIR/{1/..}.html" \
+     -j "$OUTPUT_DIR/{1/..}.json" \
+     -w 1 > "$LOG_DIR/05_fastp_parallel_improved_{1/..}.log" 2>&1' \
   ::: $INPUT_DIR/*.fastq.gz
 ```
 
-Add the above script to `00_scripts/05_fastqc_parallel_improved.sh`.
+Add the above script to `00_scripts/05_fastp_parallel_improved.sh`.
 
 Make it executable:
 
 ```bash
-chmod +x 00_scripts/05_fastqc_parallel_improved.sh
+chmod +x 00_scripts/05_fastp_parallel_improved.sh
 ```
 
 Run the script:
 
 ```bash
-time ./00_scripts/05_fastqc_parallel_improved.sh
+time ./00_scripts/05_fastp_parallel_improved.sh
 ```
 
 <details>
 <summary>Output</summary>
 <pre>
-real    0m30.624s
-user    2m53.930s
-sys     0m6.853s
+real    TODO
+user    TODO
+sys     TODO
 </pre>
 </details>
 
