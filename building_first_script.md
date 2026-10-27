@@ -419,14 +419,3 @@ sys     TODO
 </pre>
 </details>
 
-
-In the third workshop “Introduction to Pipeline Development” you will learn to:
-
-Convert commands into reusable Bash scripts
-Use variables, loops, paths, and naming conventions
-Organize inputs, outputs, scripts, and log files
-Build reproducible multi-step pipelines
-Add error handling and logging
-Parallelize independent tasks with GNU Parallel
-Integrate scripts and pipelines with Slurm
-Match pipeline concurrency to requested HPC resources
