@@ -271,8 +271,114 @@ Fix the problem (for example, a missing file or too little memory), then either:
 - run the launcher again. Finished samples are skipped, because the per-sample script skips steps whose outputs exist; or
 - rerun only the failed jobs with parallel: add `--resume-failed` to the `parallel` line (it uses the same `--joblog` file).
 
+### Alternative: a Slurm job array
+
+GNU Parallel runs all samples inside **one** allocation. With a Slurm job array, each sample becomes its **own job** with its own CPUs and memory, scheduled independently. The same `10_pipeline_sample.sh` is reused unchanged.
+
+**Step 1: make a sample list** (one sample name per line):
+
+```bash
+ls 01_data/*_R1.fastq.gz | xargs -n1 basename | sed 's/_R1.fastq.gz$//' > samples.txt
+cat samples.txt
+```
+
+<details>
+<summary>Output</summary>
+<pre>
+bio_sample_01
+bio_sample_02
+bio_sample_03
+bio_sample_04
+bio_sample_05
+</pre>
+</details>
+
+**Step 2: the array script.** Save as `00_scripts/12_pipeline_array.sh`:
+
+```bash
+#!/usr/bin/env bash
+#SBATCH --job-name=pipeline
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32G
+#SBATCH --time=04:00:00
+#SBATCH --output=logs/slurm_%A_%a.out
+#SBATCH --error=logs/slurm_%A_%a.err
+# TODO: add --partition / --account if your cluster requires them
+# TODO: tune --mem and --time to your genome size and data
+
+set -euo pipefail
+
+SAMPLE_LIST="${SAMPLE_LIST:-samples.txt}"
+
+# Pick the line of samples.txt that matches this array task
+SAMPLE=$(sed -n "${SLURM_ARRAY_TASK_ID}p" "$SAMPLE_LIST")
+[[ -n "$SAMPLE" ]] || { echo "ERROR: no sample for task $SLURM_ARRAY_TASK_ID" >&2; exit 1; }
+
+# Use the CPUs Slurm gave us (2 are left for samtools sort)
+export THREADS=$(( SLURM_CPUS_PER_TASK > 2 ? SLURM_CPUS_PER_TASK - 2 : 1 ))
+
+echo "Task $SLURM_ARRAY_TASK_ID: sample $SAMPLE on $(hostname) with $THREADS threads"
+
+./00_scripts/10_pipeline_sample.sh "$SAMPLE"
+```
+
+- Lines starting with `#SBATCH` are read by Slurm as job options; they must come before the first command.
+- `--cpus-per-task`, `--mem` and `--time` are **per array task** (per sample), not for the whole array.
+- `%A` is the array job ID and `%a` the task index, so each task gets its own Slurm output and error file.
+- `SLURM_ARRAY_TASK_ID` is set by Slurm for each task. `sed -n "${SLURM_ARRAY_TASK_ID}p"` prints only that line number of `samples.txt`, so task 1 handles the first sample, task 2 the second, and so on.
+- `THREADS` is derived from `SLURM_CPUS_PER_TASK`, so the pipeline uses exactly the cores requested. Changing `--cpus-per-task` is enough; nothing else needs editing. This is how concurrency is matched to the requested resources.
+
+**Step 3: submit.** The `logs/` directory must exist before submitting, because Slurm opens the output files before the script starts:
+
+```bash
+chmod +x 00_scripts/12_pipeline_array.sh
+mkdir -p logs
+sbatch --array=1-$(wc -l < samples.txt) 00_scripts/12_pipeline_array.sh
+```
+
+<details>
+<summary>Output</summary>
+<pre>
+Submitted batch job TODO
+</pre>
+</details>
+
+Optional: limit how many tasks run at once with `%`, e.g. `--array=1-5%2` runs at most 2 samples at a time.
+
+**Step 4: monitor**
+
+```bash
+squeue -u $USER
+sacct -j <jobid> --format=JobID,JobName,State,Elapsed,MaxRSS,ExitCode
+```
+
+<details>
+<summary>Output</summary>
+<pre>
+TODO: paste real output
+</pre>
+</details>
+
+- `MaxRSS` shows the memory each task actually used. Use it to tune `--mem`.
+- Per-sample pipeline logs are in `logs/<sample>_fastp.log` and `logs/<sample>_bwa_mem2.log`; Slurm's own output is in `logs/slurm_<jobid>_<task>.out/.err`.
+
+**Step 5: rerun only failures.** Because finished steps are skipped, rerunning is cheap. Resubmit just the failed task indices:
+
+```bash
+sbatch --array=2,4 00_scripts/12_pipeline_array.sh
+```
+
+**Parallel or array?**
+
+| | GNU Parallel (`11_run_pipeline.sh`) | Slurm array (`12_pipeline_array.sh`) |
+|---|---|---|
+| Resources | One allocation shared by all samples | Separate request per sample |
+| Scheduling | Starts when the one big job starts | Tasks start as resources free up |
+| Best for | Few samples, interactive session or one node | Many samples, or many nodes |
+| Failure handling | Joblog, `--resume-failed` | Resubmit failed indices |
+
 ### Things to know
 
 - **Intermediate files are kept.** `02_fastp_paired/` holds the trimmed reads, which are as large as the raw data. Keep them while developing. Once you are confident in the results, you can delete them to save disk space, but then the fastp step has to be redone for any re-run.
 - **Module loads inside the script.** The per-sample script loads its own modules so it can be run alone. If your cluster's `module` command is not available in non-interactive shells, load the modules in `11_run_pipeline.sh` instead and remove the `module` lines from the per-sample script (TODO: verify on Nova).
-- **Where this goes next:** the same `10_pipeline_sample.sh` can be used unchanged with a Slurm job array (one task per sample), which is covered in the Slurm part of the workshop.
+- **Reuse:** `10_pipeline_sample.sh` is used unchanged by both launchers. Only the way samples are started differs.
