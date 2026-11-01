@@ -202,12 +202,12 @@ parallel -j"$JOBS" --joblog "$LOG_DIR/pipeline_joblog.tsv" \
 ```
 
 - `JOBS` samples run at the same time, each with `THREADS` threads. **Cores used is about `JOBS x THREADS`** (plus 2 samtools sort threads per sample), so keep this at or below the cores you requested.
-  - Example: 16 cores gives `JOBS=4 THREADS=3`.
+  - Example: with 16 cores, `JOBS=3 THREADS=3` uses about 3 x (3 + 2) = 15 cores. The defaults (`JOBS=4 THREADS=4`) need about 4 x (4 + 2) = 24 cores.
   - Override from the command line: `JOBS=2 THREADS=8 ./00_scripts/11_run_pipeline.sh`.
 - `export THREADS` makes the value visible to the per-sample script that parallel starts.
 - `--joblog` records the start time, runtime and exit code of every sample.
 
-Do a dry run first (prints the commands without running them), by adding `--dry-run` to the `parallel` line temporarily, or run:
+Do a dry run first, which prints the commands without running them:
 
 ```bash
 parallel --dry-run -j4 ./00_scripts/10_pipeline_sample.sh {} ::: bio_sample_01 bio_sample_02
