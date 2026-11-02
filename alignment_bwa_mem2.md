@@ -36,6 +36,47 @@ fastp \
 - `-i`/`-o` are read 1 input/output; `-I`/`-O` are read 2 input/output.
 - The rest of this page uses `02_fastp_paired/` as the input to alignment.
 
+Now trim all samples as pairs. Sample names come from the R1 files, and R2 is derived from the sample name. Save as `00_scripts/06_fastp_paired_loop.sh`:
+
+```bash
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+INPUT_DIR="01_data"
+OUTPUT_DIR="02_fastp_paired"
+LOG_DIR="logs"
+
+mkdir -p "$OUTPUT_DIR" "$LOG_DIR"
+
+module purge
+module load fastp
+
+for r1 in "$INPUT_DIR"/*_R1.fastq.gz
+do
+  sample_id=$(basename "$r1" _R1.fastq.gz)
+  r2="$INPUT_DIR/${sample_id}_R2.fastq.gz"
+
+  echo "Trimming: $sample_id"
+
+  fastp \
+    -i "$r1" -I "$r2" \
+    -o "$OUTPUT_DIR/${sample_id}_R1.trimmed.fastq.gz" \
+    -O "$OUTPUT_DIR/${sample_id}_R2.trimmed.fastq.gz" \
+    -h "$OUTPUT_DIR/${sample_id}.html" \
+    -j "$OUTPUT_DIR/${sample_id}.json" \
+    > "$LOG_DIR/06_fastp_paired_${sample_id}.log" 2>&1
+done
+```
+
+```bash
+chmod +x 00_scripts/06_fastp_paired_loop.sh
+./00_scripts/06_fastp_paired_loop.sh
+ls 02_fastp_paired/*_R1.trimmed.fastq.gz
+```
+
+You should see 5 trimmed R1 files (and 5 R2 files). Step 3 below needs all of them.
+
 ### Step 1: Index the reference (once)
 
 bwa-mem2 needs an index of the reference before it can align. This is done once per reference and is memory- and time-intensive for large genomes, so run it on a compute node (not the head node).
@@ -93,7 +134,7 @@ samtools index 03_alignment/bio_sample_01.sorted.bam
   - The first argument after the options is the reference; then R1 and R2.
 - `2> logs/...` sends bwa-mem2's progress messages (stderr) to a log file. SAM output goes to stdout, so we must not redirect stdout to the log.
 - `|` pipes the SAM stream straight into `samtools sort`, so the large uncompressed SAM file is never written to disk.
-  - `-@ 4` gives samtools 4 additional threads.
+  - `-@ 4` gives samtools 4 additional threads (on top of the main thread).
   - `-o` is the sorted BAM output. The trailing `-` means read from stdin.
 - `samtools index` creates the `.bai` index needed for viewing and variant calling.
 
@@ -198,6 +239,7 @@ module load bwa-mem2
 module load samtools
 
 align_one() {
+  set -euo pipefail
   sample_id=$1
   bwa-mem2 mem -t 4 \
     -R "@RG\tID:${sample_id}\tSM:${sample_id}\tPL:ILLUMINA" \
@@ -214,10 +256,11 @@ parallel -j4 align_one {} ::: $(ls $INPUT_DIR/*_R1.trimmed.fastq.gz | xargs -n1 
 ```
 
 - A shell function (`align_one`) keeps the multi-line command readable; `export -f` makes it visible to the subshells that parallel spawns.
+- `set -euo pipefail` is repeated inside the function because the options set at the top of the script are not inherited by the fresh bash that parallel starts for each job. Without it, a failing `bwa-mem2` would go unnoticed.
 - The last line builds the list of sample names (`bio_sample_01`, ...) from the R1 files by stripping the directory and the `_R1.trimmed.fastq.gz` suffix, and `parallel` passes one name per job to `align_one` via `{}`.
 - Total cores here: 4 jobs x (4 bwa-mem2 threads + 2 samtools threads) is about 24 threads at peak, so adjust `-j` and the thread counts to your allocation.
 
-Always dry-run the parallel command first (prefix the function call with `echo`):
+Always dry-run the parallel command first. `--dry-run` prints the command that would run for each sample (here, just the call to `align_one`) without running it:
 
 ```bash
 parallel --dry-run -j4 align_one {} ::: bio_sample_01 bio_sample_02
@@ -237,8 +280,8 @@ sys     TODO
 ### Check that all samples aligned
 
 ```bash
-ls -lh 03_alignment/*.bam
-grep -L "Real time" logs/07_bwa_mem2_*.log logs/08_bwa_mem2_loop_*.log
+ls -lh 03_alignment/*.bam 03_alignment_parallel/*.bam
+grep -L "Real time" logs/07_bwa_mem2_*.log logs/08_bwa_mem2_loop_*.log logs/09_bwa_mem2_parallel_*.log
 ```
 
 - bwa-mem2 prints `Real time: ...` at the end of a successful run; `grep -L` lists log files that do **not** contain it, i.e., runs that may have failed. No output means all runs finished.
