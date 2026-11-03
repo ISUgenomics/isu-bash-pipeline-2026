@@ -1,8 +1,11 @@
 # isu-bash-pipeline-2026
 Introduction to pipeline development in bash
 
-## Instructor 
+## Instructor
 Viswanathan Satheesh
+Bioinformatics Facility, 
+Office of Biotechnology, 
+Iowa State University, Ames, IA
 
 ## Agenda (4 hours)
 
