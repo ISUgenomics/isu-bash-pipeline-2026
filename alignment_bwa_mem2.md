@@ -82,6 +82,10 @@ You should see 5 trimmed R1 files (and 5 R2 files). Step 3 below needs all of th
 bwa-mem2 needs an index of the reference before it can align. This is done once per reference and is memory- and time-intensive for large genomes, so run it on a compute node (not the head node).
 
 ```bash
+#!/usr/bin/env bash
+
+set -euo pipefail
+
 module purge
 module load bwa-mem2
 
@@ -102,7 +106,7 @@ TODO: paste real output
 </pre>
 </details>
 
-Save as `00_scripts/07_bwa_mem2_index.sh`, then:
+Save as `00_scripts/07_bwa_mem2_index.sh` (the index step writes no log of its own; its messages appear in the terminal), then:
 
 ```bash
 chmod +x 00_scripts/07_bwa_mem2_index.sh
