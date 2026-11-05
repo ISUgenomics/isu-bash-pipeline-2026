@@ -1,11 +1,11 @@
-# Running commands and making a script of the commands run
+# Building your first script: fastp, loops and GNU Parallel
 
 ## Some questions:
 1. Have you used `VSCode server` on `Nova OnDemand` before?
 2. Are you comfortable with basic bash commands like `ls`, `cd`, `mkdir`, `rm`, `cat`, `echo`?
 3. Have you written simple bash scripts combining several steps into a pipeline before?
 4. Are you comfortable with using bash variables and loops?
-5. Are you comfortable with submitting batch jobs to a cluster? (is this question necessary?)
+5. Are you comfortable with submitting batch jobs to a cluster?
 
 
 ### What is a job?
@@ -16,7 +16,7 @@
 
 - A head node is a node that is used to control the cluster.
 - It is the node that will be used to submit your jobs to the cluster.
-- Remember, we DO NOT run intensive jobs on this node. 
+- Remember, we DO NOT run intensive jobs on this node.
 
 ### What is a compute node?
 
@@ -51,8 +51,7 @@ fastp \
   -h 02_fastp/bio_sample_01_R1.html \
   -j 02_fastp/bio_sample_01_R1.json
 ```
--p flag is used to create the directory if it does not exist.
-
+- `mkdir -p` creates the directory if it does not exist (and does not complain if it already does).
 - `-i` is the input FASTQ file and `-o` is the output (quality filtered and adapter trimmed) FASTQ file.
 - `-h` writes the HTML quality report and `-j` writes the JSON report.
 
@@ -69,15 +68,23 @@ bio_sample_01_R1.html  bio_sample_01_R1.json  bio_sample_01_R1.trimmed.fastq.gz
 </pre>
 </details>
 
-Remove the folders created
+Remove the folder created so we can repeat the run from a script:
 
 ```bash
 rm -r 02_fastp
 ```
 
-Open `00_scripts/01_fastp.sh` in the script window. 
+Create the scripts directory (if you have not already):
 
 ```bash
+mkdir -p 00_scripts
+```
+
+Then open a new file `00_scripts/01_fastp.sh` in the editor and add:
+
+```bash
+#!/usr/bin/env bash
+
 module purge
 module load fastp
 mkdir -p 02_fastp logs
@@ -105,7 +112,7 @@ chmod +x 00_scripts/01_fastp.sh
 **Run the script**
 
 ```bash
-time ./00_scripts/01_fastp.sh 
+time ./00_scripts/01_fastp.sh
 ```
 
 **Output**
@@ -129,7 +136,7 @@ A simple example:
 
 ```bash
 # A simple loop example: list files in 01_data/
-for file in 01_data/*.fastq.gz 
+for file in 01_data/*.fastq.gz
 do
   echo "Found file: $file"
 done
@@ -142,6 +149,8 @@ done
 **Run `fastp` on all files in `01_data/`**
 
 ```bash
+#!/usr/bin/env bash
+
 module purge
 module load fastp
 
@@ -153,9 +162,9 @@ do
   echo "Running fastp on: $sample_id"
   fastp \
     -i "$file" \
-    -o 03_fastp_loop/${sample_id}.trimmed.fastq.gz \
-    -h 03_fastp_loop/${sample_id}.html \
-    -j 03_fastp_loop/${sample_id}.json \
+    -o "03_fastp_loop/${sample_id}.trimmed.fastq.gz" \
+    -h "03_fastp_loop/${sample_id}.html" \
+    -j "03_fastp_loop/${sample_id}.json" \
     > logs/02_fastp_loop.log 2>&1
 done
 ```
@@ -204,32 +213,34 @@ cat logs/02_fastp_loop.log
 
 The log file only contains the fastp summary (read counts before/after filtering, adapter trimming, duplication rate) for the last file, because each iteration overwrites the log with `>`.
 
-Let us now make sure that we have a log file for each file. 
+Let us now make sure that we have a log file for each file.
 
 ```bash
+#!/usr/bin/env bash
+
 module purge
 module load fastp
 
-INPUT_DIR=01_data
-OUTPUT_DIR=04_fastp_loop_samplename
-LOG_DIR=logs
+INPUT_DIR="01_data"
+OUTPUT_DIR="04_fastp_loop_samplename"
+LOG_DIR="logs"
 
-mkdir -p $OUTPUT_DIR $LOG_DIR
+mkdir -p "$OUTPUT_DIR" "$LOG_DIR"
 
-for file in $INPUT_DIR/*.fastq.gz 
-do  
+for file in "$INPUT_DIR"/*.fastq.gz
+do
   sample_id=$(basename "$file" .fastq.gz)
   echo "Running fastp on: $sample_id"
   fastp \
-    -i $file \
-    -o $OUTPUT_DIR/${sample_id}.trimmed.fastq.gz \
-    -h $OUTPUT_DIR/${sample_id}.html \
-    -j $OUTPUT_DIR/${sample_id}.json \
-    > $LOG_DIR/03_fastp_loop_$sample_id.log 2>&1
+    -i "$file" \
+    -o "$OUTPUT_DIR/${sample_id}.trimmed.fastq.gz" \
+    -h "$OUTPUT_DIR/${sample_id}.html" \
+    -j "$OUTPUT_DIR/${sample_id}.json" \
+    > "$LOG_DIR/03_fastp_loop_${sample_id}.log" 2>&1
 done
 ```
 
-Using shell variables in the loop helps to make the script more readable, maintainable, and reusable.
+Using shell variables in the loop (and quoting them, `"$file"`, so names with spaces do not break the command) helps to make the script more readable, maintainable, and reusable.
 
 Save this script as `03_fastp_loop_samplename.sh` in `00_scripts` directory.
 
@@ -294,7 +305,7 @@ Let us now use GNU Parallel to run fastp on all files in parallel.
 The first step is go for a dry run to see what commands will be executed.
 
 ```bash
-module load parallel 
+module load parallel
 mkdir -p 05_fastp_parallel
 parallel --dry-run -j 10 'fastp -i {} -o 05_fastp_parallel/{/..}.trimmed.fastq.gz -h 05_fastp_parallel/{/..}.html -j 05_fastp_parallel/{/..}.json -w 1' ::: 01_data/*.fastq.gz
 ```
@@ -309,9 +320,11 @@ parallel --dry-run -j 10 'fastp -i {} -o 05_fastp_parallel/{/..}.trimmed.fastq.g
 To actually run the commands (not just show them), remove `--dry-run`:
 
 ```bash
+#!/usr/bin/env bash
+
 module purge
 module load parallel
-module load fastp 
+module load fastp
 
 mkdir -p 05_fastp_parallel logs
 
@@ -350,7 +363,7 @@ sys     TODO
 </details>
 
 - **Why `user` > `real` here**
-  - Because we ran multiple tasks concurrently (e.g., via loops or GNU Parallel), CPU time across cores adds up. If 8 cores each do ~15 seconds of work, `user` could be ~120 seconds while `real` is ~15–30 seconds.
+  - CPU time across cores adds up. fastp is itself multi-threaded, so `user` was already slightly above `real` for the single-file run. With GNU Parallel running many jobs at once, the gap grows. If 8 cores each do ~15 seconds of work, `user` could be ~120 seconds while `real` is ~15–30 seconds.
 
 - **How to interpret**
   - Use `real` to estimate elapsed time for the end-to-end run (what you experience).
@@ -361,8 +374,8 @@ sys     TODO
 ```bash
 #!/usr/bin/env bash
 
-set -euo pipefail # error handling: 
-                  # -e: exit immediately if any command returns a non-zero exit status (error) 
+set -euo pipefail # error handling:
+                  # -e: exit immediately if any command returns a non-zero exit status (error)
                   # -u: treat unset variables as an error and exit (useful for debugging)
                   # -o pipefail: exit if any command in a pipeline fails (useful for debugging)
 
@@ -393,7 +406,7 @@ parallel -j10 \
      -h "$OUTPUT_DIR/{1/..}.html" \
      -j "$OUTPUT_DIR/{1/..}.json" \
      -w 1 > "$LOG_DIR/05_fastp_parallel_improved_{1/..}.log" 2>&1' \
-  ::: $INPUT_DIR/*.fastq.gz
+  ::: "$INPUT_DIR"/*.fastq.gz
 ```
 
 Add the above script to `00_scripts/05_fastp_parallel_improved.sh`.
@@ -418,4 +431,3 @@ user    TODO
 sys     TODO
 </pre>
 </details>
-
