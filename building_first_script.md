@@ -118,10 +118,12 @@ time ./00_scripts/01_fastp.sh
 **Output**
 
 ```
-real    0m6.949s
-user    0m7.568s
-sys     0m0.597s
+real    0m36.7s
+user    0m38.3s
+sys     0m0.7s
 ```
+
+Your times will be a little different. Note the time for one file (about 37 seconds). We will compare it with the loop and with GNU Parallel.
 
 - `real`: The wall-clock time — how long the command took from start to finish
           Includes everything: CPU time, waiting for I/O (disk, network), scheduling delays, etc.
@@ -199,11 +201,13 @@ Running fastp on: bio_sample_04_R2
 Running fastp on: bio_sample_05_R1
 Running fastp on: bio_sample_05_R2
 
-real    TODO
-user    TODO
-sys     TODO
+real    3m54.6s
+user    5m28.4s
+sys     0m5.5s
 </pre>
 </details>
+
+The files are processed one after the other, so the total time is about 10 times the time for one file.
 
 Check the log file:
 
@@ -270,11 +274,13 @@ Running fastp on: bio_sample_04_R2
 Running fastp on: bio_sample_05_R1
 Running fastp on: bio_sample_05_R2
 
-real    TODO
-user    TODO
-sys     TODO
+real    3m58.3s
+user    5m28.5s
+sys     0m5.1s
 </pre>
 </details>
+
+The time is the same as before. We only changed how the logs are saved.
 
 Check the log files:
 
@@ -293,11 +299,20 @@ grep "time used" logs/03_fastp_loop_bio_sample*log
 <details>
 <summary>Output</summary>
 <pre>
-logs/03_fastp_loop_bio_sample_01_R1.log:fastp v&lt;version&gt;, time used: &lt;N&gt; seconds
-...
-(one line per sample file; TODO: paste real output)
+logs/03_fastp_loop_bio_sample_01_R1.log:fastp v1.0.1, time used: 37 seconds
+logs/03_fastp_loop_bio_sample_01_R2.log:fastp v1.0.1, time used: 37 seconds
+logs/03_fastp_loop_bio_sample_02_R1.log:fastp v1.0.1, time used: 18 seconds
+logs/03_fastp_loop_bio_sample_02_R2.log:fastp v1.0.1, time used: 15 seconds
+logs/03_fastp_loop_bio_sample_03_R1.log:fastp v1.0.1, time used: 7 seconds
+logs/03_fastp_loop_bio_sample_03_R2.log:fastp v1.0.1, time used: 35 seconds
+logs/03_fastp_loop_bio_sample_04_R1.log:fastp v1.0.1, time used: 10 seconds
+logs/03_fastp_loop_bio_sample_04_R2.log:fastp v1.0.1, time used: 7 seconds
+logs/03_fastp_loop_bio_sample_05_R1.log:fastp v1.0.1, time used: 35 seconds
+logs/03_fastp_loop_bio_sample_05_R2.log:fastp v1.0.1, time used: 35 seconds
 </pre>
 </details>
+
+You should see 10 lines, one for each file. The times and the order of the lines may differ on your run. If a file is missing, open its log to see what went wrong.
 
 #### Multiple files (GNU Parallel)
 
@@ -307,15 +322,26 @@ The first step is go for a dry run to see what commands will be executed.
 ```bash
 module load parallel
 mkdir -p 05_fastp_parallel
-parallel --dry-run -j 10 'fastp -i {} -o 05_fastp_parallel/{/..}.trimmed.fastq.gz -h 05_fastp_parallel/{/..}.html -j 05_fastp_parallel/{/..}.json -w 1' ::: 01_data/*.fastq.gz
+parallel --dry-run -j 10 --rpl '{sample} s:.*/::; s/\.fastq\.gz$//' 'fastp -i {} -o 05_fastp_parallel/{sample}.trimmed.fastq.gz -h 05_fastp_parallel/{sample}.html -j 05_fastp_parallel/{sample}.json -w 1' ::: 01_data/*.fastq.gz
 ```
 
-- `--dry-run` prints the commands that would be executed, without running them. Use this to verify first.
-- `-j 10` means run up to 10 jobs at the same time (choose based on cores available to you).
-- The quoted string is the command template; `{}` will be replaced by each input filename.
-- `{/..}` is a GNU Parallel modifier: it removes the directory and two extensions, so `01_data/bio_sample_01_R1.fastq.gz` becomes `bio_sample_01_R1`.
-- `-w 1` tells fastp to use one worker thread per job (the default is 3), so 10 parallel jobs do not oversubscribe the cores.
-- `:::` introduces the list of inputs to feed to GNU Parallel; here the shell expands `01_data/*.fastq.gz` to all matching files.
+- `--dry-run` prints the commands that would be run, without running them. Always check first.
+- `-j 10` means run up to 10 jobs at the same time. Set it to the number of cores you have.
+- The quoted string is the command template. `{}` is replaced by each input file name.
+- `--rpl '{sample} s:.*/::; s/\.fastq\.gz$//'` makes our own placeholder called `{sample}`. It removes the folder name and the `.fastq.gz` ending, so `01_data/bio_sample_01_R1.fastq.gz` becomes `bio_sample_01_R1`. (It is the same job `basename` did in the loop.)
+- `-w 1` tells fastp to use one thread per job (the default is 3), so 10 parallel jobs do not use more cores than we have.
+- `:::` starts the list of inputs. The shell expands `01_data/*.fastq.gz` to all matching files.
+
+Check the output. You should see 10 `fastp` commands, one per file, with `{sample}` already replaced. For example:
+
+<details>
+<summary>Output (first line)</summary>
+<pre>
+fastp -i 01_data/bio_sample_01_R1.fastq.gz -o 05_fastp_parallel/bio_sample_01_R1.trimmed.fastq.gz -h 05_fastp_parallel/bio_sample_01_R1.html -j 05_fastp_parallel/bio_sample_01_R1.json -w 1
+</pre>
+</details>
+
+If you still see `{sample}` in the output, check that you typed the `--rpl` part exactly.
 
 To actually run the commands (not just show them), remove `--dry-run`:
 
@@ -328,16 +354,15 @@ module load fastp
 
 mkdir -p 05_fastp_parallel logs
 
-parallel -j10 \
-  'fastp -i {1} -o 05_fastp_parallel/{1/..}.trimmed.fastq.gz -h 05_fastp_parallel/{1/..}.html -j 05_fastp_parallel/{1/..}.json -w 1 > logs/04_fastp_parallel_{1/..}.log 2>&1' \
+parallel -j10 --rpl '{sample} s:.*/::; s/\.fastq\.gz$//' \
+  'fastp -i {} -o 05_fastp_parallel/{sample}.trimmed.fastq.gz -h 05_fastp_parallel/{sample}.html -j 05_fastp_parallel/{sample}.json -w 1 > logs/04_fastp_parallel_{sample}.log 2>&1' \
   ::: 01_data/*.fastq.gz
 ```
 
-- The trailing `\` characters are line continuations so the long command is split across multiple lines for readability.
-- Quotes `'...'` keep the whole fastp template as one string so that GNU Parallel, not your shell, substitutes `{1}` and `{1/..}`.
-- `{1}` is the first input argument (each file matched by the glob). With a single input source, `{}` and `{1}` are equivalent.
-- `{1/..}` expands to the basename of the first input with the directory and both extensions (`.fastq.gz`) removed. This lets us name per-file outputs and logs like `logs/04_fastp_parallel_bio_sample_01_R1.log`.
-- `> logs/04_fastp_parallel_{1/..}.log 2>&1` writes both stdout and stderr of each fastp run to a separate log file derived from the input name.
+- The trailing `\` characters split the long command over several lines, so it is easier to read.
+- Quotes `'...'` keep the whole fastp template as one string, so that GNU Parallel (not your shell) fills in `{}` and `{sample}`.
+- `{}` is the input file. `{sample}` is the file name without the folder and `.fastq.gz` (defined by `--rpl`). We use it to name the outputs and the logs, e.g. `logs/04_fastp_parallel_bio_sample_01_R1.log`.
+- `> logs/04_fastp_parallel_{sample}.log 2>&1` writes the messages of each fastp run to its own log file.
 
 Add the above script to `00_scripts/04_fastp_parallel.sh`.
 
@@ -356,14 +381,16 @@ time ./00_scripts/04_fastp_parallel.sh
 <details>
 <summary>Output</summary>
 <pre>
-real    TODO
-user    TODO
-sys     TODO
+real    1m0.7s
+user    7m15.9s
+sys     0m9.1s
 </pre>
 </details>
 
+This was run with 10 cores. The loop took about 4 minutes, and now it takes about 1 minute. It is not 10 times faster, because the 10 jobs share the disk and each job still takes longer than a single run.
+
 - **Why `user` > `real` here**
-  - CPU time across cores adds up. fastp is itself multi-threaded, so `user` was already slightly above `real` for the single-file run. With GNU Parallel running many jobs at once, the gap grows. If 8 cores each do ~15 seconds of work, `user` could be ~120 seconds while `real` is ~15–30 seconds.
+  - CPU time of all cores adds up. 10 jobs ran at the same time, so `user` (about 7 minutes) is much larger than `real` (about 1 minute). In the single-file run `user` was only slightly above `real`, because only one job was running.
 
 - **How to interpret**
   - Use `real` to estimate elapsed time for the end-to-end run (what you experience).
@@ -400,14 +427,18 @@ module load parallel
 module load fastp
 
 # Run fastp
-parallel -j10 \
-  'fastp -i "{1}" \
-     -o "$OUTPUT_DIR/{1/..}.trimmed.fastq.gz" \
-     -h "$OUTPUT_DIR/{1/..}.html" \
-     -j "$OUTPUT_DIR/{1/..}.json" \
-     -w 1 > "$LOG_DIR/05_fastp_parallel_improved_{1/..}.log" 2>&1' \
+parallel -j10 --rpl '{sample} s:.*/::; s/\.fastq\.gz$//' \
+  'fastp -i "{}" \
+     -o "$OUTPUT_DIR/{sample}.trimmed.fastq.gz" \
+     -h "$OUTPUT_DIR/{sample}.html" \
+     -j "$OUTPUT_DIR/{sample}.json" \
+     -w 1 > "$LOG_DIR/05_fastp_parallel_improved_{sample}.log" 2>&1' \
   ::: "$INPUT_DIR"/*.fastq.gz
 ```
+
+- `set -euo pipefail` makes the script stop at the first error, instead of carrying on silently.
+- `export` is needed because GNU Parallel runs each job in a new shell. Without it, `$OUTPUT_DIR` and `$LOG_DIR` would be empty inside the quotes.
+- The `parallel` command is the same as before, but now the folder names come from the variables at the top. To use new folders, change only those lines.
 
 Add the above script to `00_scripts/05_fastp_parallel_improved.sh`.
 
@@ -426,8 +457,18 @@ time ./00_scripts/05_fastp_parallel_improved.sh
 <details>
 <summary>Output</summary>
 <pre>
-real    TODO
-user    TODO
-sys     TODO
+real    0m58.8s
+user    7m18.1s
+sys     0m9.5s
 </pre>
 </details>
+
+The time is the same as the previous script. The cleaner version only makes the script easier to read and to reuse.
+
+**How many cores do I have?**
+
+```bash
+nproc
+```
+
+Set `-j` to this number (or lower). If you ask for more jobs than cores, the jobs compete with each other and nothing gets faster.
