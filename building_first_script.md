@@ -58,7 +58,7 @@ module load fastp
 Make the output folder:
 
 ```bash
-mkdir -p 02_fastp
+mkdir -p 03_fastp
 ```
 
 - `mkdir -p` creates the directory if it does not exist (and does not complain if it already does).
@@ -68,20 +68,20 @@ Run fastp on one sample:
 ```bash
 fastp \
   -i 01_data/bio_sample_01_R1.fastq.gz -I 01_data/bio_sample_01_R2.fastq.gz \
-  -o 02_fastp/bio_sample_01_R1.trimmed.fastq.gz \
-  -O 02_fastp/bio_sample_01_R2.trimmed.fastq.gz \
-  -h 02_fastp/bio_sample_01.html \
-  -j 02_fastp/bio_sample_01.json
+  -o 03_fastp/bio_sample_01_R1.trimmed.fastq.gz \
+  -O 03_fastp/bio_sample_01_R2.trimmed.fastq.gz \
+  -h 03_fastp/bio_sample_01.html \
+  -j 03_fastp/bio_sample_01.json
 ```
 
 - `-i` is the input FASTQ file for read 1 and `-o` is its output (quality filtered and adapter trimmed).
 - `-I` is the input FASTQ file for read 2 and `-O` is its output.
 - `-h` writes the HTML quality report and `-j` writes the JSON report. There is one report per sample, not one per file.
 
-Once the program is run, it will create a directory called `02_fastp` and put the output files in it.
+Once the program is run, it will create a directory called `03_fastp` and put the output files in it.
 
 ```bash
-ls 02_fastp
+ls 03_fastp
 ```
 
 <details>
@@ -94,7 +94,7 @@ bio_sample_01.html  bio_sample_01.json  bio_sample_01_R1.trimmed.fastq.gz  bio_s
 Remove the folder created so we can repeat the run from a script:
 
 ```bash
-rm -r 02_fastp
+rm -r 03_fastp
 ```
 
 Create the scripts directory (if you have not already):
@@ -110,18 +110,18 @@ Then open a new file `00_scripts/01_fastp.sh` in the editor and add:
 
 module purge
 module load fastp
-mkdir -p 02_fastp logs
+mkdir -p 03_fastp logs
 fastp \
   -i 01_data/bio_sample_01_R1.fastq.gz -I 01_data/bio_sample_01_R2.fastq.gz \
-  -o 02_fastp/bio_sample_01_R1.trimmed.fastq.gz \
-  -O 02_fastp/bio_sample_01_R2.trimmed.fastq.gz \
-  -h 02_fastp/bio_sample_01.html \
-  -j 02_fastp/bio_sample_01.json \
+  -o 03_fastp/bio_sample_01_R1.trimmed.fastq.gz \
+  -O 03_fastp/bio_sample_01_R2.trimmed.fastq.gz \
+  -h 03_fastp/bio_sample_01.html \
+  -j 03_fastp/bio_sample_01.json \
   > logs/01_fastp.log 2>&1
 ```
 
 - Explanation of the command in the script:
-  - `fastp -i ... -I ... -o ... -O ... -h ... -j ...` runs fastp on the sample and writes the trimmed reads and the HTML/JSON reports to the `02_fastp/` directory.
+  - `fastp -i ... -I ... -o ... -O ... -h ... -j ...` runs fastp on the sample and writes the trimmed reads and the HTML/JSON reports to the `03_fastp/` directory.
   - `> logs/01_fastp.log` redirects standard output (stdout, file descriptor 1) to the log file, overwriting it if it exists.
   - `2>&1` redirects standard error (stderr, file descriptor 2) to the same destination as stdout, so both stdout and stderr end up in `logs/01_fastp.log`. fastp writes its progress messages to stderr, so this is needed to capture them.
   - This pattern is useful to capture all program messages for troubleshooting and record-keeping. Ensure `logs/` exists (we created it with `mkdir -p logs`).
@@ -182,7 +182,7 @@ done
 module purge
 module load fastp
 
-mkdir -p 03_fastp_loop logs
+mkdir -p 04_fastp_loop logs
 
 for r1 in 01_data/*_R1.fastq.gz
 do
@@ -191,10 +191,10 @@ do
   echo "Running fastp on: $sample_id"
   fastp \
     -i "$r1" -I "$r2" \
-    -o "03_fastp_loop/${sample_id}_R1.trimmed.fastq.gz" \
-    -O "03_fastp_loop/${sample_id}_R2.trimmed.fastq.gz" \
-    -h "03_fastp_loop/${sample_id}.html" \
-    -j "03_fastp_loop/${sample_id}.json" \
+    -o "04_fastp_loop/${sample_id}_R1.trimmed.fastq.gz" \
+    -O "04_fastp_loop/${sample_id}_R2.trimmed.fastq.gz" \
+    -h "04_fastp_loop/${sample_id}.html" \
+    -j "04_fastp_loop/${sample_id}.json" \
     > logs/02_fastp_loop.log 2>&1
 done
 ```
@@ -251,7 +251,7 @@ module purge
 module load fastp
 
 INPUT_DIR="01_data"
-OUTPUT_DIR="04_fastp_loop_samplename"
+OUTPUT_DIR="05_fastp_loop_samplename"
 LOG_DIR="logs"
 
 mkdir -p "$OUTPUT_DIR" "$LOG_DIR"
@@ -347,7 +347,7 @@ module load parallel
 Now the dry run (this is one long command):
 
 ```bash
-parallel --dry-run -j 5 --rpl '{sample} s:.*/::; s/_R1\.fastq\.gz$//' 'fastp -i {} -I 01_data/{sample}_R2.fastq.gz -o 05_fastp_parallel/{sample}_R1.trimmed.fastq.gz -O 05_fastp_parallel/{sample}_R2.trimmed.fastq.gz -h 05_fastp_parallel/{sample}.html -j 05_fastp_parallel/{sample}.json' ::: 01_data/*_R1.fastq.gz
+parallel --dry-run -j 5 --rpl '{sample} s:.*/::; s/_R1\.fastq\.gz$//' 'fastp -i {} -I 01_data/{sample}_R2.fastq.gz -o 06_fastp_parallel/{sample}_R1.trimmed.fastq.gz -O 06_fastp_parallel/{sample}_R2.trimmed.fastq.gz -h 06_fastp_parallel/{sample}.html -j 06_fastp_parallel/{sample}.json' ::: 01_data/*_R1.fastq.gz
 ```
 
 - `--dry-run` prints the commands that would be run, without running them. Always check first.
@@ -361,7 +361,7 @@ Check the output. You should see 5 `fastp` commands, one per sample, with `{samp
 <details>
 <summary>Output (first line)</summary>
 <pre>
-fastp -i 01_data/bio_sample_01_R1.fastq.gz -I 01_data/bio_sample_01_R2.fastq.gz -o 05_fastp_parallel/bio_sample_01_R1.trimmed.fastq.gz -O 05_fastp_parallel/bio_sample_01_R2.trimmed.fastq.gz -h 05_fastp_parallel/bio_sample_01.html -j 05_fastp_parallel/bio_sample_01.json
+fastp -i 01_data/bio_sample_01_R1.fastq.gz -I 01_data/bio_sample_01_R2.fastq.gz -o 06_fastp_parallel/bio_sample_01_R1.trimmed.fastq.gz -O 06_fastp_parallel/bio_sample_01_R2.trimmed.fastq.gz -h 06_fastp_parallel/bio_sample_01.html -j 06_fastp_parallel/bio_sample_01.json
 </pre>
 </details>
 
@@ -376,10 +376,10 @@ module purge
 module load parallel
 module load fastp
 
-mkdir -p 05_fastp_parallel logs
+mkdir -p 06_fastp_parallel logs
 
 parallel -j5 --rpl '{sample} s:.*/::; s/_R1\.fastq\.gz$//' \
-  'fastp -i {} -I 01_data/{sample}_R2.fastq.gz -o 05_fastp_parallel/{sample}_R1.trimmed.fastq.gz -O 05_fastp_parallel/{sample}_R2.trimmed.fastq.gz -h 05_fastp_parallel/{sample}.html -j 05_fastp_parallel/{sample}.json > logs/04_fastp_parallel_{sample}.log 2>&1' \
+  'fastp -i {} -I 01_data/{sample}_R2.fastq.gz -o 06_fastp_parallel/{sample}_R1.trimmed.fastq.gz -O 06_fastp_parallel/{sample}_R2.trimmed.fastq.gz -h 06_fastp_parallel/{sample}.html -j 06_fastp_parallel/{sample}.json > logs/04_fastp_parallel_{sample}.log 2>&1' \
   ::: 01_data/*_R1.fastq.gz
 ```
 
@@ -438,7 +438,7 @@ set -euo pipefail # error handling:
 INPUT_DIR="01_data"
 
 # Output directory
-OUTPUT_DIR="06_fastp_parallel_improved"
+OUTPUT_DIR="07_fastp_parallel_improved"
 
 # Log directory
 LOG_DIR="logs"
@@ -507,7 +507,7 @@ Set `JOBS` (the `-j` value) to a number that is not much higher than this. If yo
 **What did we make?**
 
 ```bash
-ls 06_fastp_parallel_improved | head
+ls 07_fastp_parallel_improved | head
 ```
 
-For each sample we have two trimmed FASTQ files (`R1` and `R2`), an HTML report and a JSON report. The trimmed pairs in `06_fastp_parallel_improved/` are the input for the next lesson (alignment).
+For each sample we have two trimmed FASTQ files (`R1` and `R2`), an HTML report and a JSON report. The trimmed pairs in `07_fastp_parallel_improved/` are the input for the next lesson (alignment).
