@@ -23,6 +23,28 @@
 - A compute node is a node that is used to run your intensive jobs.
 
 
+### How we organise the project
+
+A pipeline makes many files. A clear layout and clear names help you (and others) find things and re-run the work later.
+
+```text
+00_scripts/      our scripts
+01_data/         the raw reads (we never change these)
+02_reference/    the reference genome
+03_fastp/        output of one step (one folder per step)
+04_fastp_loop/   ...
+logs/            one log file per run
+```
+
+Our simple rules:
+
+- **One folder for each kind of file**: scripts, raw data, reference, results of each step, logs. Raw data is never edited. Results go into new folders, so we can delete and re-make them.
+- **Numbers at the start of a name** keep the folders in the order we made them (`00`, `01`, `02`, ...). The scripts have their own numbers: `01_fastp.sh`, `02_fastp_loop.sh`, ...
+- **A log starts with the number of the script that wrote it**, and ends with the sample name: `logs/03_fastp_loop_bio_sample_01.log`. So you can always tell which script made which log.
+- **The sample name is part of every file name** (`bio_sample_01_R1.trimmed.fastq.gz`), so a file name tells you where it came from.
+- **Use lowercase letters, numbers and `_`. No spaces.** Spaces break commands unless you quote them.
+- **Run everything from the project folder**, so the paths (`01_data/`, `logs/`) work the same for every script.
+
 ### What are the files in the data folder?
 
 ```bash
@@ -511,3 +533,42 @@ ls 07_fastp_parallel_improved | head
 ```
 
 For each sample we have two trimmed FASTQ files (`R1` and `R2`), an HTML report and a JSON report. The trimmed pairs in `07_fastp_parallel_improved/` are the input for the next lesson (alignment).
+
+#### Keep a record of what you used
+
+Anyone (including you, in six months) should be able to get the same result again. Three habits help:
+
+- **Load the modules inside the script.** Every script starts with `module purge` and `module load ...`, so it runs the same way in any session. It does not depend on what you loaded by hand before.
+- **Keep the scripts and the logs.** The script shows *what* was run, and the log shows what the program said.
+- **Write down the versions of the tools.** Different versions can give different results.
+
+Check the version of a tool:
+
+```bash
+fastp --version
+```
+
+<details>
+<summary>Output</summary>
+<pre>
+fastp 1.0.1
+</pre>
+</details>
+
+See all the modules that are loaded:
+
+```bash
+module list
+```
+
+<details>
+<summary>Output</summary>
+<pre>
+Currently Loaded Modules:
+1) libisal/2.31.0-y37xm3e   4) libdeflate/1.18-qdyjwrz
+2) gzip/1.13-dd46t2i        5) fastp/1.0.1-ph6eq7r
+3) zlib-ng/2.2.1-4rxbcvx
+</pre>
+</details>
+
+(Your list may be a little different. It depends on which modules you loaded.) fastp also writes its version into every log: look at the `grep "time used"` output above, it shows `fastp v1.0.1`.
