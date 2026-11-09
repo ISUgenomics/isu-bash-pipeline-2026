@@ -10,19 +10,24 @@ Before you start:
 ls 07_fastp_parallel_improved/*.trimmed.fastq.gz | wc -l
 ```
 
-- The reference genome is in `02_reference/`. We link it as `00_ref/genome.fa`, so the commands are short.
+- The reference genome is `02_reference/b73_chr1_150000001-151000000.fasta`, the file we copied in the setup. We use it from there.
 - The modules are `bwa` and `samtools`.
 - Alignment needs R1 and R2 reads to stay in sync (read N in R1 must be the mate of read N in R2). This is why we trimmed each sample as a pair with one fastp command.
 
-Link the reference:
+Check the reference:
 
 ```bash
-mkdir -p 00_ref
-ln -s ../02_reference/b73_chr1_150000001-151000000.fasta 00_ref/genome.fa
-ls -L 00_ref
+ls 02_reference/
 ```
 
-- `ln -s` makes a shortcut (symbolic link), so we do not copy the file.
+<details>
+<summary>Output</summary>
+<pre>
+b73_chr1_150000001-151000000.fasta
+</pre>
+</details>
+
+- The FASTA file has one sequence, `chr1`: a 1 Mb piece of maize chromosome 1.
 
 ### What is alignment?
 
@@ -50,7 +55,7 @@ set -euo pipefail
 module purge
 module load bwa
 
-bwa index 00_ref/genome.fa
+bwa index 02_reference/b73_chr1_150000001-151000000.fasta
 ```
 
 Save the file (the index step writes no log of its own; its messages appear in the terminal), then make it executable and run it:
@@ -60,17 +65,22 @@ chmod +x 00_scripts/06_bwa_index.sh
 ./00_scripts/06_bwa_index.sh
 ```
 
-- This creates five index files next to the reference: `.amb`, `.ann`, `.bwt`, `.pac` and `.sa`.
+- This creates five index files next to the reference, in `02_reference/`. They have the same name as the FASTA file, with `.amb`, `.ann`, `.bwt`, `.pac` or `.sa` added at the end.
 - Check that they exist:
 
 ```bash
-ls 00_ref/
+ls 02_reference/
 ```
 
 <details>
 <summary>Output</summary>
 <pre>
-genome.fa  genome.fa.amb  genome.fa.ann  genome.fa.bwt  genome.fa.pac  genome.fa.sa
+b73_chr1_150000001-151000000.fasta
+b73_chr1_150000001-151000000.fasta.amb
+b73_chr1_150000001-151000000.fasta.ann
+b73_chr1_150000001-151000000.fasta.bwt
+b73_chr1_150000001-151000000.fasta.pac
+b73_chr1_150000001-151000000.fasta.sa
 </pre>
 </details>
 
@@ -87,7 +97,7 @@ mkdir -p 08_alignment logs
 
 bwa mem -t 8 \
   -R '@RG\tID:bio_sample_01\tSM:bio_sample_01\tPL:ILLUMINA' \
-  00_ref/genome.fa \
+  02_reference/b73_chr1_150000001-151000000.fasta \
   07_fastp_parallel_improved/bio_sample_01_R1.trimmed.fastq.gz \
   07_fastp_parallel_improved/bio_sample_01_R2.trimmed.fastq.gz \
   2> logs/06_bwa_bio_sample_01.log \
@@ -157,7 +167,7 @@ Then open the new file `00_scripts/07_bwa_loop.sh` in the editor and add:
 
 set -euo pipefail
 
-REF="00_ref/genome.fa"
+REF="02_reference/b73_chr1_150000001-151000000.fasta"
 INPUT_DIR="07_fastp_parallel_improved"
 OUTPUT_DIR="08_alignment"
 LOG_DIR="logs"
@@ -234,7 +244,7 @@ Then open the new file `00_scripts/08_bwa_parallel.sh` in the editor and add:
 
 set -euo pipefail
 
-REF="00_ref/genome.fa"
+REF="02_reference/b73_chr1_150000001-151000000.fasta"
 INPUT_DIR="07_fastp_parallel_improved"
 OUTPUT_DIR="09_alignment_parallel"
 LOG_DIR="logs"
@@ -303,7 +313,7 @@ grep -L "Real time" logs/06_bwa_*.log logs/07_bwa_loop_*.log logs/08_bwa_paralle
 
 ### Common problems
 
-- **`fail to locate the index files`**: the reference was not indexed, or the path to `genome.fa` is wrong.
+- **`fail to locate the index files`**: the reference was not indexed, or the path to the reference (`02_reference/b73_chr1_150000001-151000000.fasta`) is wrong.
 - **Out of memory when indexing/aligning**: request more memory for the job. Large genomes need much more memory than our small reference.
 - **`[E::bwa_set_rg] the read group line is not started with @RG`**: check the quoting of `-R`.
 - **Reads not paired in the BAM** (`flagstat` shows 0% properly paired): R1/R2 were trimmed separately or listed in the wrong order.
