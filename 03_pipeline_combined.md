@@ -12,8 +12,8 @@ Assumptions (same as before):
 
 Instead of one long script that loops over everything, we split the work in two:
 
-1. **`10_pipeline_sample.sh <sample_id>`**: runs the whole pipeline (fastp, then bwa piped to samtools, then index and flagstat) for **one** sample.
-2. **`11_run_pipeline.sh`**: finds the samples and runs script 1 on them with GNU Parallel.
+1. **`09_pipeline_sample.sh <sample_id>`**: runs the whole pipeline (fastp, then bwa piped to samtools, then index and flagstat) for **one** sample.
+2. **`10_run_pipeline.sh`**: finds the samples and runs script 1 on them with GNU Parallel.
 
 Why split it this way:
 
@@ -25,8 +25,8 @@ Why split it this way:
 ### Directory layout
 
 ```
-00_scripts/10_pipeline_sample.sh
-00_scripts/11_run_pipeline.sh
+00_scripts/09_pipeline_sample.sh
+00_scripts/10_run_pipeline.sh
 01_data/                 raw reads
 02_reference/            reference genome (+ bwa index files)
 10_fastp_paired/         trimmed reads + fastp reports
@@ -39,10 +39,10 @@ logs/                    one log per sample and step
 Create the script using `touch`.
 
 ```bash
-touch 00_scripts/10_pipeline_sample.sh
+touch 00_scripts/09_pipeline_sample.sh
 ```
 
-Then open the new file `00_scripts/10_pipeline_sample.sh` in the editor and add:
+Then open the new file `00_scripts/09_pipeline_sample.sh` in the editor and add:
 
 ```bash
 #!/usr/bin/env bash
@@ -131,8 +131,8 @@ Explanation of the new pieces:
 Make it executable and test on **one** sample first:
 
 ```bash
-chmod +x 00_scripts/10_pipeline_sample.sh
-time ./00_scripts/10_pipeline_sample.sh bio_sample_01
+chmod +x 00_scripts/09_pipeline_sample.sh
+time ./00_scripts/09_pipeline_sample.sh bio_sample_01
 ```
 
 <details>
@@ -191,7 +191,7 @@ Your numbers may differ by a few reads, because the result of `bwa` can change a
 Run it a second time. Both steps should now be skipped almost instantly:
 
 ```bash
-time ./00_scripts/10_pipeline_sample.sh bio_sample_01
+time ./00_scripts/09_pipeline_sample.sh bio_sample_01
 ```
 
 <details>
@@ -212,10 +212,10 @@ sys     0m0.4s
 Create the script using `touch`.
 
 ```bash
-touch 00_scripts/11_run_pipeline.sh
+touch 00_scripts/10_run_pipeline.sh
 ```
 
-Then open the new file `00_scripts/11_run_pipeline.sh` in the editor and add:
+Then open the new file `00_scripts/10_run_pipeline.sh` in the editor and add:
 
 ```bash
 #!/usr/bin/env bash
@@ -240,34 +240,34 @@ echo "Samples to process:"
 echo "$SAMPLES"
 
 parallel -j"$JOBS" --joblog "$LOG_DIR/pipeline_joblog.tsv" \
-  ./00_scripts/10_pipeline_sample.sh {} ::: $SAMPLES
+  ./00_scripts/09_pipeline_sample.sh {} ::: $SAMPLES
 ```
 
 - `JOBS` samples run at the same time, each with `THREADS` threads. **Cores used is about `JOBS x THREADS`** (plus 2 samtools sort threads per sample), so keep this at or below the cores you requested.
   - Example: with 16 cores, `JOBS=3 THREADS=3` uses about 3 x (3 + 2) = 15 cores. The defaults (`JOBS=2 THREADS=3`) use about 2 x (3 + 2) = 10 cores, which is the size of our session.
-  - Override from the command line: `JOBS=2 THREADS=8 ./00_scripts/11_run_pipeline.sh`.
+  - Override from the command line: `JOBS=2 THREADS=8 ./00_scripts/10_run_pipeline.sh`.
 - `export THREADS` makes the value visible to the per-sample script that parallel starts.
 - `--joblog` records the start time, runtime and exit code of every sample.
 
 Do a dry run first, which prints the commands without running them:
 
 ```bash
-parallel --dry-run -j2 ./00_scripts/10_pipeline_sample.sh {} ::: bio_sample_01 bio_sample_02
+parallel --dry-run -j2 ./00_scripts/09_pipeline_sample.sh {} ::: bio_sample_01 bio_sample_02
 ```
 
 <details>
 <summary>Output</summary>
 <pre>
-./00_scripts/10_pipeline_sample.sh bio_sample_01
-./00_scripts/10_pipeline_sample.sh bio_sample_02
+./00_scripts/09_pipeline_sample.sh bio_sample_01
+./00_scripts/09_pipeline_sample.sh bio_sample_02
 </pre>
 </details>
 
 Make it executable and run:
 
 ```bash
-chmod +x 00_scripts/11_run_pipeline.sh
-time ./00_scripts/11_run_pipeline.sh
+chmod +x 00_scripts/10_run_pipeline.sh
+time ./00_scripts/10_run_pipeline.sh
 ```
 
 <details>
@@ -305,11 +305,11 @@ cut -f1,4,7,9 logs/pipeline_joblog.tsv
 <summary>Output</summary>
 <pre>
 Seq	JobRuntime	Exitval	Command
-1	    55.154	0	./00_scripts/10_pipeline_sample.sh bio_sample_01
-3	    47.082	0	./00_scripts/10_pipeline_sample.sh bio_sample_03
-4	    57.789	0	./00_scripts/10_pipeline_sample.sh bio_sample_04
-5	    51.090	0	./00_scripts/10_pipeline_sample.sh bio_sample_05
-2	   225.881	0	./00_scripts/10_pipeline_sample.sh bio_sample_02
+1	    55.154	0	./00_scripts/09_pipeline_sample.sh bio_sample_01
+3	    47.082	0	./00_scripts/09_pipeline_sample.sh bio_sample_03
+4	    57.789	0	./00_scripts/09_pipeline_sample.sh bio_sample_04
+5	    51.090	0	./00_scripts/09_pipeline_sample.sh bio_sample_05
+2	   225.881	0	./00_scripts/09_pipeline_sample.sh bio_sample_02
 </pre>
 </details>
 
@@ -335,15 +335,15 @@ Fix the problem (for example, a missing file or too little memory), then either:
 
 ### Alternative: the launcher inside one Slurm job
 
-So far we ran `11_run_pipeline.sh` by hand in our interactive session. If the session ends, the run stops. We can instead put the launcher in a **batch job**. Slurm runs it for us in the background, even after we log out.
+So far we ran `10_run_pipeline.sh` by hand in our interactive session. If the session ends, the run stops. We can instead put the launcher in a **batch job**. Slurm runs it for us in the background, even after we log out.
 
 This is a small wrapper around the launcher. Create the script using `touch`.
 
 ```bash
-touch 00_scripts/13_pipeline_single_job.sh
+touch 00_scripts/11_pipeline_single_job.sh
 ```
 
-Then open the new file `00_scripts/13_pipeline_single_job.sh` in the editor and add:
+Then open the new file `00_scripts/11_pipeline_single_job.sh` in the editor and add:
 
 ```bash
 #!/usr/bin/env bash
@@ -365,7 +365,7 @@ export THREADS=$(( SLURM_CPUS_PER_TASK / JOBS - 2 ))
 
 echo "Job $SLURM_JOB_ID on $(hostname): $JOBS samples at a time, $THREADS threads each"
 
-./00_scripts/11_run_pipeline.sh
+./00_scripts/10_run_pipeline.sh
 ```
 
 - `#SBATCH` lines ask Slurm for **one** job with 10 CPUs. All the samples share these 10 CPUs.
@@ -376,7 +376,7 @@ echo "Job $SLURM_JOB_ID on $(hostname): $JOBS samples at a time, $THREADS thread
 Submit it. The `logs/` directory must exist before submitting:
 
 ```bash
-chmod +x 00_scripts/13_pipeline_single_job.sh
+chmod +x 00_scripts/11_pipeline_single_job.sh
 ```
 
 ```bash
@@ -384,7 +384,7 @@ mkdir -p logs
 ```
 
 ```bash
-sbatch 00_scripts/13_pipeline_single_job.sh
+sbatch 00_scripts/11_pipeline_single_job.sh
 ```
 
 <details>
@@ -424,12 +424,12 @@ bio_sample_01
 
 The job log, the joblog and the BAM files are the same as before. Use the same checks as above (`cut -f1,4,7,9 logs/pipeline_joblog.tsv`). In our test all 5 samples ended with exit code `0`, and the job took about 4.5 minutes. The job waited in the queue first, so the total time depends on how busy the cluster is.
 
-- To change the number of samples at a time, set `JOBS` when you submit: `sbatch --export=ALL,JOBS=5 --cpus-per-task=15 00_scripts/13_pipeline_single_job.sh`. With 15 CPUs and 5 samples at a time: 15 / 5 - 2 = 1 thread per sample.
+- To change the number of samples at a time, set `JOBS` when you submit: `sbatch --export=ALL,JOBS=5 --cpus-per-task=15 00_scripts/11_pipeline_single_job.sh`. With 15 CPUs and 5 samples at a time: 15 / 5 - 2 = 1 thread per sample.
 - If a sample fails, fix the problem and submit the same script again. Finished samples are skipped.
 
 ### Alternative: a Slurm job array
 
-GNU Parallel runs all samples inside **one** allocation. With a Slurm job array, each sample becomes its **own job** with its own CPUs and memory, scheduled independently. The same `10_pipeline_sample.sh` is reused unchanged.
+GNU Parallel runs all samples inside **one** allocation. With a Slurm job array, each sample becomes its **own job** with its own CPUs and memory, scheduled independently. The same `09_pipeline_sample.sh` is reused unchanged.
 
 **Step 1: make a sample list** (one sample name per line):
 
@@ -481,7 +481,7 @@ export THREADS=$(( SLURM_CPUS_PER_TASK > 2 ? SLURM_CPUS_PER_TASK - 2 : 1 ))
 
 echo "Task $SLURM_ARRAY_TASK_ID: sample $SAMPLE on $(hostname) with $THREADS threads"
 
-./00_scripts/10_pipeline_sample.sh "$SAMPLE"
+./00_scripts/09_pipeline_sample.sh "$SAMPLE"
 ```
 
 - Lines starting with `#SBATCH` are read by Slurm as job options; they must come before the first command.
@@ -547,7 +547,7 @@ In our test, tasks 2 and 4 had already finished, so both only printed "output ex
 
 **Which one should I use?**
 
-| | GNU Parallel by hand (`11_run_pipeline.sh`) | One batch job (`13_pipeline_single_job.sh`) | Slurm array (`12_pipeline_array.sh`) |
+| | GNU Parallel by hand (`10_run_pipeline.sh`) | One batch job (`11_pipeline_single_job.sh`) | Slurm array (`12_pipeline_array.sh`) |
 |---|---|---|---|
 | Runs | In your interactive session | In the background, as one job | In the background, one job per sample |
 | Resources | The session you asked for | One request shared by all samples | Separate request per sample |
@@ -558,5 +558,5 @@ In our test, tasks 2 and 4 had already finished, so both only printed "output ex
 ### Things to know
 
 - **Intermediate files are kept.** `10_fastp_paired/` holds the trimmed reads, which are as large as the raw data. Keep them while developing. Once you are confident in the results, you can delete them to save disk space, but then the fastp step has to be redone for any re-run.
-- **Module loads inside the script.** The per-sample script loads its own modules so it can be run alone. If your cluster's `module` command is not available in non-interactive shells, load the modules in `11_run_pipeline.sh` instead and remove the `module` lines from the per-sample script. On Nova this was not needed: the `module` lines worked inside the script, both under GNU Parallel and under `sbatch`.
-- **Reuse:** `10_pipeline_sample.sh` is used unchanged by all three ways of starting it. Only the way samples are started differs.
+- **Module loads inside the script.** The per-sample script loads its own modules so it can be run alone. If your cluster's `module` command is not available in non-interactive shells, load the modules in `10_run_pipeline.sh` instead and remove the `module` lines from the per-sample script. On Nova this was not needed: the `module` lines worked inside the script, both under GNU Parallel and under `sbatch`.
+- **Reuse:** `09_pipeline_sample.sh` is used unchanged by all three ways of starting it. Only the way samples are started differs.
