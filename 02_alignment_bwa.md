@@ -34,6 +34,14 @@ ls -L 00_ref
 
 bwa needs an index of the reference before it can align. This is done once per reference. For large genomes it needs a lot of memory and time, so run it on a compute node (not the head node). Our reference is small (about 1 Mb), so it takes about a second.
 
+Create the script using `touch`.
+
+```bash
+touch 00_scripts/06_bwa_index.sh
+```
+
+Then open the new file `00_scripts/06_bwa_index.sh` in the editor and add:
+
 ```bash
 #!/usr/bin/env bash
 
@@ -45,7 +53,7 @@ module load bwa
 bwa index 00_ref/genome.fa
 ```
 
-Save as `00_scripts/06_bwa_index.sh` (the index step writes no log of its own; its messages appear in the terminal), then make it executable and run it:
+Save the file (the index step writes no log of its own; its messages appear in the terminal), then make it executable and run it:
 
 ```bash
 chmod +x 00_scripts/06_bwa_index.sh
@@ -136,6 +144,14 @@ samtools flagstat 08_alignment/bio_sample_01.sorted.bam
 
 Sample names come from the R1 files, and R2 is derived from the sample name.
 
+Create the script using `touch`.
+
+```bash
+touch 00_scripts/07_bwa_loop.sh
+```
+
+Then open the new file `00_scripts/07_bwa_loop.sh` in the editor and add:
+
 ```bash
 #!/usr/bin/env bash
 
@@ -173,7 +189,7 @@ done
 - `basename "$r1" _R1.trimmed.fastq.gz` strips the directory and suffix to leave `bio_sample_01`.
 - `set -euo pipefail` matters here: with `pipefail`, the script stops if `bwa` fails even though `samtools sort` (the last command in the pipe) would otherwise succeed.
 
-Save as `00_scripts/07_bwa_loop.sh`, make it executable, and run:
+Save the file, make it executable, and run:
 
 ```bash
 chmod +x 00_scripts/07_bwa_loop.sh
@@ -204,6 +220,14 @@ You may also see `[bam_sort_core] merging from ...` lines in the terminal. They 
 Each alignment is already multi-threaded, so total cores used = (number of parallel jobs) x (threads per job). Do not request more than you have.
 
 Example: 4 samples at a time, 4 bwa threads and 2 samtools sort threads each.
+
+Create the script using `touch`.
+
+```bash
+touch 00_scripts/08_bwa_parallel.sh
+```
+
+Then open the new file `00_scripts/08_bwa_parallel.sh` in the editor and add:
 
 ```bash
 #!/usr/bin/env bash
@@ -251,7 +275,7 @@ Always dry-run the parallel command first. `--dry-run` prints the command that w
 parallel --dry-run -j4 align_one {} ::: bio_sample_01 bio_sample_02
 ```
 
-Save as `00_scripts/08_bwa_parallel.sh`, make it executable and time it as before.
+Save the file, make it executable and time it as before.
 
 <details>
 <summary>Output</summary>

@@ -119,10 +119,16 @@ Remove the folder created so we can repeat the run from a script:
 rm -r 03_fastp
 ```
 
-Create the scripts directory (if you have not already):
+Create the scripts directory
 
 ```bash
 mkdir -p 00_scripts
+```
+
+Let's create the script using `touch`.
+
+```bash
+touch 00_scripts/01_fastp.sh
 ```
 
 Then open a new file `00_scripts/01_fastp.sh` in the editor and add:
@@ -198,6 +204,14 @@ done
 
 **Run `fastp` on all samples in `01_data/`**
 
+Let's create the script using `touch`.
+
+```bash
+touch 00_scripts/02_fastp_loop.sh
+```
+
+Then open the new file `00_scripts/02_fastp_loop.sh` in the editor and add:
+
 ```bash
 #!/usr/bin/env bash
 
@@ -225,7 +239,7 @@ done
 - `r2="01_data/${sample_id}_R2.fastq.gz"` builds the name of the matching R2 file from the sample name.
 - We need the sample name because fastp does not name its reports after the input: without unique `-h`/`-j` names every sample would overwrite the same `fastp.html`/`fastp.json`.
 
-Save this script as `02_fastp_loop.sh` in `00_scripts` directory.
+Save the file.
 
 Make it executable:
 
@@ -266,6 +280,14 @@ The log file only contains the fastp summary (read counts before/after filtering
 
 Let us now make sure that we have a log file for each sample.
 
+Create the next script using `touch`.
+
+```bash
+touch 00_scripts/03_fastp_loop_samplename.sh
+```
+
+Then open the new file `00_scripts/03_fastp_loop_samplename.sh` in the editor and add:
+
 ```bash
 #!/usr/bin/env bash
 
@@ -295,7 +317,7 @@ done
 
 Using shell variables in the loop (and quoting them, `"$r1"`, so names with spaces do not break the command) helps to make the script more readable, maintainable, and reusable.
 
-Save this script as `03_fastp_loop_samplename.sh` in `00_scripts` directory.
+Save the file.
 
 Make it executable:
 
@@ -389,7 +411,15 @@ fastp -i 01_data/bio_sample_01_R1.fastq.gz -I 01_data/bio_sample_01_R2.fastq.gz 
 
 If you still see `{sample}` in the output, check that you typed the `--rpl` part exactly.
 
-To actually run the commands (not just show them), remove `--dry-run`:
+To actually run the commands (not just show them), remove `--dry-run`. We put the command in a script.
+
+Create the script using `touch`.
+
+```bash
+touch 00_scripts/04_fastp_parallel.sh
+```
+
+Then open the new file `00_scripts/04_fastp_parallel.sh` in the editor and add:
 
 ```bash
 #!/usr/bin/env bash
@@ -410,7 +440,7 @@ parallel -j5 --rpl '{sample} s:.*/::; s/_R1\.fastq\.gz$//' \
 - `{}` is the R1 file. `{sample}` is the sample name (defined by `--rpl`). We use it to name the outputs and the logs, e.g. `logs/04_fastp_parallel_bio_sample_01.log`.
 - `> logs/04_fastp_parallel_{sample}.log 2>&1` writes the messages of each fastp run to its own log file.
 
-Add the above script to `00_scripts/04_fastp_parallel.sh`.
+Save the file.
 
 Make it executable:
 
@@ -446,6 +476,14 @@ The loop took about 30 seconds. GNU Parallel takes about 17 seconds. It is faste
   - Use `user + sys` to gauge how much total CPU work was consumed. Large gaps between `real` and `user+sys` often indicate parallelism; very small `user`/`sys` compared to `real` can indicate waiting on I/O.
 
 #### Cleaner shell script
+
+Create the script using `touch`.
+
+```bash
+touch 00_scripts/05_fastp_parallel_improved.sh
+```
+
+Then open the new file `00_scripts/05_fastp_parallel_improved.sh` in the editor and add:
 
 ```bash
 #!/usr/bin/env bash
@@ -493,7 +531,7 @@ parallel -j"$JOBS" --rpl '{sample} s:.*/::; s/_R1\.fastq\.gz$//' \
 - `export` is needed because GNU Parallel runs each job in a new shell. Without it, `$OUTPUT_DIR`, `$LOG_DIR` and `$INPUT_DIR` would be empty inside the quotes.
 - The `parallel` command is the same as before, but now the folder names and the number of jobs come from the variables at the top. To use new folders or more jobs, change only those lines.
 
-Add the above script to `00_scripts/05_fastp_parallel_improved.sh`.
+Save the file.
 
 Make it executable:
 
