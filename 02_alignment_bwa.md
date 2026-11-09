@@ -1,13 +1,13 @@
 # Aligning reads to a reference genome with bwa
 
-Previous step: `building_first_script.md` (quality control and trimming with fastp).
+Previous step: `01_building_first_script.md` (quality control and trimming with fastp).
 
 Before you start:
 
-- The trimmed read pairs from the previous lesson are in `06_fastp_parallel_improved/` (for example `bio_sample_01_R1.trimmed.fastq.gz` and `bio_sample_01_R2.trimmed.fastq.gz`). Check that you have 10 files:
+- The trimmed read pairs from the previous lesson are in `07_fastp_parallel_improved/` (for example `bio_sample_01_R1.trimmed.fastq.gz` and `bio_sample_01_R2.trimmed.fastq.gz`). Check that you have 10 files:
 
 ```bash
-ls 06_fastp_parallel_improved/*.trimmed.fastq.gz | wc -l
+ls 07_fastp_parallel_improved/*.trimmed.fastq.gz | wc -l
 ```
 
 - The reference genome is in `02_reference/`. We link it as `00_ref/genome.fa`, so the commands are short.
@@ -75,17 +75,17 @@ module purge
 module load bwa
 module load samtools
 
-mkdir -p 03_alignment logs
+mkdir -p 08_alignment logs
 
 bwa mem -t 8 \
   -R '@RG\tID:bio_sample_01\tSM:bio_sample_01\tPL:ILLUMINA' \
   00_ref/genome.fa \
-  06_fastp_parallel_improved/bio_sample_01_R1.trimmed.fastq.gz \
-  06_fastp_parallel_improved/bio_sample_01_R2.trimmed.fastq.gz \
+  07_fastp_parallel_improved/bio_sample_01_R1.trimmed.fastq.gz \
+  07_fastp_parallel_improved/bio_sample_01_R2.trimmed.fastq.gz \
   2> logs/06_bwa_bio_sample_01.log \
-  | samtools sort -@ 4 -o 03_alignment/bio_sample_01.sorted.bam -
+  | samtools sort -@ 4 -o 08_alignment/bio_sample_01.sorted.bam -
 
-samtools index 03_alignment/bio_sample_01.sorted.bam
+samtools index 08_alignment/bio_sample_01.sorted.bam
 ```
 
 This takes about 25 seconds for sample 01.
@@ -103,7 +103,7 @@ This takes about 25 seconds for sample 01.
 Quick sanity check of the alignment:
 
 ```bash
-samtools flagstat 03_alignment/bio_sample_01.sorted.bam
+samtools flagstat 08_alignment/bio_sample_01.sorted.bam
 ```
 
 <details>
@@ -142,8 +142,8 @@ Sample names come from the R1 files, and R2 is derived from the sample name.
 set -euo pipefail
 
 REF="00_ref/genome.fa"
-INPUT_DIR="06_fastp_parallel_improved"
-OUTPUT_DIR="03_alignment"
+INPUT_DIR="07_fastp_parallel_improved"
+OUTPUT_DIR="08_alignment"
 LOG_DIR="logs"
 THREADS=8
 
@@ -211,8 +211,8 @@ Example: 4 samples at a time, 4 bwa threads and 2 samtools sort threads each.
 set -euo pipefail
 
 REF="00_ref/genome.fa"
-INPUT_DIR="06_fastp_parallel_improved"
-OUTPUT_DIR="03_alignment_parallel"
+INPUT_DIR="07_fastp_parallel_improved"
+OUTPUT_DIR="09_alignment_parallel"
 LOG_DIR="logs"
 
 mkdir -p "$OUTPUT_DIR" "$LOG_DIR"
@@ -271,7 +271,7 @@ sys     0m10.4s
 ### Check that all samples aligned
 
 ```bash
-ls -lh 03_alignment/*.bam 03_alignment_parallel/*.bam
+ls -lh 08_alignment/*.bam 09_alignment_parallel/*.bam
 grep -L "Real time" logs/06_bwa_*.log logs/07_bwa_loop_*.log logs/08_bwa_parallel_*.log
 ```
 
