@@ -285,7 +285,17 @@ Always dry-run the parallel command first. `--dry-run` prints the command that w
 parallel --dry-run -j4 align_one {} ::: bio_sample_01 bio_sample_02
 ```
 
-Save the file, make it executable and time it as before.
+Save the file and make it executable:
+
+```bash
+chmod +x 00_scripts/08_bwa_parallel.sh
+```
+
+Run the script:
+
+```bash
+time ./00_scripts/08_bwa_parallel.sh
+```
 
 <details>
 <summary>Output</summary>
