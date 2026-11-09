@@ -379,14 +379,131 @@ Notice that `bio_sample_02` takes much longer than the others (16 seconds). It i
 
 #### Multiple samples (GNU Parallel)
 
-Let us now use GNU Parallel to run fastp on all samples at the same time.
-The first step is go for a dry run to see what commands will be executed.
+GNU Parallel runs the same command on many inputs, and it can run several of them **at the same time**. Before we use it for fastp, let us try a few small examples.
 
 Load GNU Parallel:
 
 ```bash
 module load parallel
 ```
+
+**Example 1: one command, three inputs**
+
+```bash
+parallel echo "Hello {}" ::: sample1 sample2 sample3
+```
+
+<details>
+<summary>Output</summary>
+<pre>
+Hello sample1
+Hello sample2
+Hello sample3
+</pre>
+</details>
+
+- `parallel` is followed by the command we want to run: `echo "Hello {}"`.
+- `:::` starts the list of inputs.
+- `{}` is replaced by each input in turn. So parallel ran `echo Hello sample1`, `echo Hello sample2` and `echo Hello sample3`.
+- The lines can come in a different order on your run. The jobs run at the same time, and each one prints when it is done.
+
+**Example 2: look before you run**
+
+```bash
+parallel --dry-run echo "Hello {}" ::: sample1 sample2 sample3
+```
+
+<details>
+<summary>Output</summary>
+<pre>
+echo Hello sample1
+echo Hello sample2
+echo Hello sample3
+</pre>
+</details>
+
+- `--dry-run` prints the commands that parallel would run, but does not run them. We will use it before every real run.
+
+**Example 3: how many jobs at the same time**
+
+Each job prints the time it started, and then waits 2 seconds. First, one job at a time (`-j 1`):
+
+```bash
+parallel -j 1 'echo "{} started at $(date +%T)"; sleep 2' ::: A B C
+```
+
+<details>
+<summary>Output</summary>
+<pre>
+A started at 15:27:28
+B started at 15:27:30
+C started at 15:27:33
+</pre>
+</details>
+
+The jobs start one after the other. Now three jobs at the same time (`-j 3`):
+
+```bash
+parallel -j 3 'echo "{} started at $(date +%T)"; sleep 2' ::: A B C
+```
+
+<details>
+<summary>Output</summary>
+<pre>
+A started at 15:27:35
+B started at 15:27:35
+C started at 15:27:35
+</pre>
+</details>
+
+All three jobs start at the same time. Your times will be different.
+
+- `-j` is the number of jobs that run at the same time.
+- The quotes `'...'` keep the whole command (`echo ...; sleep 2`) as one piece, so parallel can run it for each input.
+
+**Example 4: our own files**
+
+```bash
+parallel echo {} ::: 01_data/*_R1.fastq.gz
+```
+
+<details>
+<summary>Output</summary>
+<pre>
+01_data/bio_sample_01_R1.fastq.gz
+01_data/bio_sample_02_R1.fastq.gz
+01_data/bio_sample_03_R1.fastq.gz
+01_data/bio_sample_04_R1.fastq.gz
+01_data/bio_sample_05_R1.fastq.gz
+</pre>
+</details>
+
+- The shell expands `01_data/*_R1.fastq.gz` to the R1 file of each sample, so parallel gets 5 inputs. It is the same list as in our `for` loop.
+
+**Example 5: the sample name**
+
+We need the sample name (`bio_sample_01`) to build the file names, like `basename` did in the loop. In GNU Parallel we make our own placeholder called `{sample}`:
+
+```bash
+parallel --rpl '{sample} s:.*/::; s/_R1\.fastq\.gz$//' echo "Sample: {sample}" ::: 01_data/*_R1.fastq.gz
+```
+
+<details>
+<summary>Output</summary>
+<pre>
+Sample: bio_sample_01
+Sample: bio_sample_02
+Sample: bio_sample_03
+Sample: bio_sample_04
+Sample: bio_sample_05
+</pre>
+</details>
+
+- `--rpl '{sample} ...'` defines the new placeholder. The rule after the name has two steps: remove everything up to the last `/` (the folder), and then remove `_R1.fastq.gz`. So `01_data/bio_sample_01_R1.fastq.gz` becomes `bio_sample_01`. You can copy this rule as it is.
+
+**Now fastp**
+
+Let us now use GNU Parallel to run fastp on all samples at the same time. We use the same parts as in the examples: the R1 files as inputs, `{sample}` for the names, `-j` for the number of jobs and `--dry-run` to check first.
 
 Now the dry run (this is one long command):
 
@@ -397,7 +514,7 @@ parallel --dry-run -j 5 --rpl '{sample} s:.*/::; s/_R1\.fastq\.gz$//' 'fastp -i 
 - `--dry-run` prints the commands that would be run, without running them. Always check first.
 - `-j 5` means run up to 5 jobs at the same time. We have 5 samples, so we use 5 jobs. Do not set it much higher than the number of cores you have.
 - The quoted string is the command template. `{}` is replaced by each input file name (the R1 file of a sample).
-- `--rpl '{sample} s:.*/::; s/_R1\.fastq\.gz$//'` makes our own placeholder called `{sample}`. It removes the folder name and the `_R1.fastq.gz` ending, so `01_data/bio_sample_01_R1.fastq.gz` becomes `bio_sample_01`. (It is the same job `basename` did in the loop.) We use it to build the R2 file name and the output names.
+- `--rpl '{sample} ...'` is the same `{sample}` placeholder as in Example 5: the sample name, e.g. `bio_sample_01`. We use it to build the R2 file name and the output names.
 - `:::` starts the list of inputs. The shell expands `01_data/*_R1.fastq.gz` to the R1 file of each sample.
 
 Check the output. You should see 5 `fastp` commands, one per sample, with `{sample}` already replaced. For example:
