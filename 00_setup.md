@@ -1,6 +1,6 @@
 # Setup
 
-Everything in this workshop runs from one project directory on Nova. Items marked TODO still need to be filled in.
+Everything in this workshop runs from one project folder on Nova (`/work/short_term/$USER`). In this setup you log in, clone the lessons, copy the data and check the tools.
 
 ## 1. Quick start: log in and open your work folder
 
@@ -62,7 +62,7 @@ cd $USER
 
    <img src="assets/03_vscode_server_form.png" alt="VS Code Server launch form with account, partition, time, CPUs, memory, and working directory fields" width="700"/>
 
-## 2. Get an interactive session
+## 2. Get an interactive session (if using Shell)
 
 Do not run the workshop commands on the head node. If you started VS Code Server with the settings above, you already have a session on a compute node. To get a session from a terminal instead, use:
 
@@ -72,7 +72,7 @@ salloc --account=short_term --partition=interactive --cpus-per-task=10 --mem=16G
 
 For the workshop we use the account `short_term` and the partition `interactive`, the same as in the VS Code Server form.
 
-## 3. Get the lesson files
+## 3. Clone the repository
 
 The lessons are in a public GitHub repository. Clone it into your work folder (`/work/short_term/$USER`):
 
@@ -80,27 +80,68 @@ The lessons are in a public GitHub repository. Clone it into your work folder (`
 git clone https://github.com/ISUgenomics/isu-bash-pipeline-2026.git
 ```
 
-The lessons are the numbered files in the new folder `isu-bash-pipeline-2026`: `00_setup.md`, `01_building_first_script.md`, `02_alignment_bwa.md` and `03_pipeline_combined.md`. You can open them in VS Code Server to read along. We do our own work in a **separate** project folder (next step), so the lesson files stay clean.
-
-## 4. Create the project directory
-
-Make the project folder (you should be in `/work/short_term/$USER`):
+Go into the new folder to look at what is in it:
 
 ```bash
-mkdir -p isu-bash-pipeline-workshop
+cd isu-bash-pipeline-2026
 ```
 
-Go into it:
+List what is in it:
 
 ```bash
-cd isu-bash-pipeline-workshop
+ls
 ```
 
-Make the folders we need:
+<details>
+<summary>Output</summary>
+<pre>
+00_setup.md  01_building_first_script.md  02_alignment_bwa.md  03_pipeline_combined.md  assets  cheatsheet.md  exercises.md  LICENSE  README.md
+</pre>
+</details>
+
+- `README.md` has the agenda of the workshop.
+- `00_setup.md` is this page. `01_building_first_script.md`, `02_alignment_bwa.md` and `03_pipeline_combined.md` are the three lessons, in order.
+- `cheatsheet.md` is a short list of the commands we use, and `exercises.md` has the exercises.
+- `assets/` holds the screenshots, and `LICENSE` is the license.
+
+You can open the lessons in VS Code Server to read along.
+
+Now go back up one folder, to your work folder `/work/short_term/$USER`:
 
 ```bash
-mkdir -p 00_scripts 01_data 02_reference logs
+cd ..
 ```
+
+This is our **project folder**. The lesson files stay in `isu-bash-pipeline-2026`, and we run everything and keep all our data and results here, in the project folder.
+
+## 4. Copy the materials we need
+
+The reads and the reference genome are in a shared folder. Copy both folders into the project folder (you must be in `/work/short_term/$USER`, one level above `isu-bash-pipeline-2026`). It takes a few seconds:
+
+```bash
+cp -r /work/short_term/pipeline_workshop_2026/* .
+```
+
+Check that they are there:
+
+```bash
+ls 01_data 02_reference
+```
+
+<details>
+<summary>Output</summary>
+<pre>
+01_data:
+bio_sample_01_R1.fastq.gz  bio_sample_02_R1.fastq.gz  bio_sample_03_R1.fastq.gz  bio_sample_04_R1.fastq.gz  bio_sample_05_R1.fastq.gz
+bio_sample_01_R2.fastq.gz  bio_sample_02_R2.fastq.gz  bio_sample_03_R2.fastq.gz  bio_sample_04_R2.fastq.gz  bio_sample_05_R2.fastq.gz
+
+02_reference:
+b73_chr1_150000001-151000000.fasta
+</pre>
+</details>
+
+- `01_data/` has the reads: 5 paired-end samples (`R1` and `R2` file for each). They are about 580 MB in total (10 files of 34-140 MB each).
+- `02_reference/` has the reference genome these reads come from, `b73_chr1_150000001-151000000.fasta` (a 1 Mb piece of maize chromosome 1, about 1 MB). The alignment lesson links it as `00_ref/genome.fa`.
 
 Check where you are:
 
@@ -108,37 +149,16 @@ Check where you are:
 pwd
 ```
 
-Every later command assumes your working directory is this folder.
-
-## 5. Copy the data and reference
-
-- Reads: 5 paired-end samples, `bio_sample_01_R1.fastq.gz` ... `bio_sample_05_R2.fastq.gz`, go in `01_data/`.
-- Reference: the genome these reads come from, `b73_chr1_150000001-151000000.fasta` (a 1 Mb piece of maize chromosome 1), goes in `02_reference/`. The alignment lesson links it as `00_ref/genome.fa`.
-- Size: the reads are about 580 MB in total (10 files of 34-140 MB each). The reference is about 1 MB.
-
-Copy the reads from the workshop folder into `01_data/` (run this in your project folder, `isu-bash-pipeline-workshop`). It takes a few seconds:
-
-```bash
-cp /work/short_term/workshop_materials/satheesh_bash/01_data/*.fastq.gz 01_data/
-```
-
-Check that you have 10 files:
-
-```bash
-ls 01_data/
-```
-
 <details>
 <summary>Output</summary>
 <pre>
-bio_sample_01_R1.fastq.gz  bio_sample_02_R1.fastq.gz  bio_sample_03_R1.fastq.gz  bio_sample_04_R1.fastq.gz  bio_sample_05_R1.fastq.gz
-bio_sample_01_R2.fastq.gz  bio_sample_02_R2.fastq.gz  bio_sample_03_R2.fastq.gz  bio_sample_04_R2.fastq.gz  bio_sample_05_R2.fastq.gz
+/work/short_term/$USER
 </pre>
 </details>
 
-TODO: add the copy command for the reference file (source path needed).
+Every later command assumes your working directory is this folder.
 
-## 6. Check the tools
+## 5. Check the tools
 
 Start with a clean set of modules:
 
@@ -172,6 +192,6 @@ samtools --version | head -n 1
 
 You may see an `Lmod Warning` about `zlib-ng` when you load `bwa`. It is harmless.
 
-## 7. Editing files
+## 6. Editing files
 
 Scripts are created in the editor (VSCode on OnDemand, or `nano 00_scripts/01_fastp.sh`). A script starts with a shebang line, `#!/usr/bin/env bash`, which tells the system to run it with bash. Make it runnable with `chmod +x` and run it with `./00_scripts/01_fastp.sh`.
