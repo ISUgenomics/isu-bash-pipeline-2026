@@ -1,6 +1,6 @@
 # Aligning reads to a reference genome with bwa
 
-Previous step: `01_building_first_script.md` (quality control and trimming with fastp).
+Previous step: `02_building_first_script.md` (quality control and trimming with fastp).
 
 Before you start:
 

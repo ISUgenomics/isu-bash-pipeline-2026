@@ -1,6 +1,6 @@
 # Combining trimming and alignment into one pipeline
 
-Previous steps: `01_building_first_script.md` (fastp) and `02_alignment_bwa.md` (bwa).
+Previous steps: `02_building_first_script.md` (fastp) and `03_alignment_bwa.md` (bwa).
 
 Assumptions (same as before):
 

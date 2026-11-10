@@ -95,13 +95,14 @@ ls
 <details>
 <summary>Output</summary>
 <pre>
-00_setup.md  01_building_first_script.md  02_alignment_bwa.md  03_pipeline_combined.md  assets  cheatsheet.md  exercises.md  LICENSE  README.md
+00_scripts  01_setup.md  02_building_first_script.md  03_alignment_bwa.md  04_pipeline_combined.md  assets  cheatsheet.md  exercises.md  LICENSE  README.md
 </pre>
 </details>
 
 - `README.md` has the agenda of the workshop.
-- `00_setup.md` is this page. `01_building_first_script.md`, `02_alignment_bwa.md` and `03_pipeline_combined.md` are the three lessons, in order.
+- `01_setup.md` is this page. `02_building_first_script.md`, `03_alignment_bwa.md` and `04_pipeline_combined.md` are the three lessons, in order.
 - `cheatsheet.md` is a short list of the commands we use, and `exercises.md` has the exercises.
+- `00_scripts/` has a copy of every script from the lessons (`01_fastp.sh` to `12_pipeline_array.sh`). We write the scripts ourselves in the lessons. If one of yours does not work, you can compare it with the copy here, or copy it into your own `00_scripts/` folder.
 - `assets/` holds the screenshots, and `LICENSE` is the license.
 
 You can open the lessons in VS Code Server to read along.
@@ -141,7 +142,7 @@ b73_chr1_150000001-151000000.fasta
 </details>
 
 - `01_data/` has the reads: 5 paired-end samples (`R1` and `R2` file for each). They are about 580 MB in total (10 files of 34-140 MB each).
-- `02_reference/` has the reference genome these reads come from, `b73_chr1_150000001-151000000.fasta` (a 1 Mb piece of maize chromosome 1, about 1 MB). The alignment lesson links it as `00_ref/genome.fa`.
+- `02_reference/` has the reference genome these reads come from, `b73_chr1_150000001-151000000.fasta` (a 1 Mb piece of maize chromosome 1, about 1 MB). The alignment lesson uses it from there.
 
 Check where you are:
 
