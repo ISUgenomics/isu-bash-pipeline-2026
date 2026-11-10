@@ -23,20 +23,6 @@ Iowa State University, Ames, IA
 
 **Contact:** bioinformatics@iastate.edu | satheesh@iastate.edu
 
-## Agenda
-
-| Time | Block | Material |
-|---|---|---|
-| 1:00 PM | Setup and orientation | `01_setup.md` |
-| 1:20 PM | From one command to a script, loops and GNU Parallel | `02_building_first_script.md` |
-| 2:35 PM | Break | |
-| 2:45 PM | Aligning reads | `03_alignment_bwa.md` (Step 4, GNU Parallel alignment, is optional) |
-| 3:45 PM | Break | |
-| 3:55 PM | A restartable per-sample pipeline | `04_pipeline_combined.md` |
-| 4:25 PM | Running on Slurm: one batch job and a job array | `04_pipeline_combined.md` (Slurm sections) |
-| 4:50 PM | Wrap-up and questions | |
-| 5:00 PM | End | |
-
 ## Prerequisites
 
 - A Nova account with access to OnDemand (or ssh) and a terminal.
