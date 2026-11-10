@@ -1,32 +1,68 @@
-# isu-bash-pipeline-2026
-Introduction to pipeline development in bash
+# Introduction to Pipeline Development
+
+Build your first pipeline in bash: from one command to a script, then to a multi-step pipeline that runs in parallel and on Slurm.
+
+**Date and time:** Tuesday, November 10, 2026, 1:00 PM - 5:00 PM
+
+## What you will learn
+
+- Convert commands into reusable Bash scripts
+- Use variables, loops, paths, and naming conventions
+- Organize inputs, outputs, scripts, and log files
+- Build reproducible multi-step pipelines
+- Add error handling and logging
+- Parallelize independent tasks with GNU Parallel
+- Integrate scripts and pipelines with Slurm
+- Match pipeline concurrency to requested HPC resources
 
 ## Instructor
-Viswanathan Satheesh
-Bioinformatics Facility, 
-Office of Biotechnology, 
+
+Viswanathan Satheesh  
+Bioinformatics Facility, Office of Biotechnology  
 Iowa State University, Ames, IA
 
-## Agenda (4 hours)
+**Contact:** bioinformatics@iastate.edu | satheesh@iastate.edu
+
+## Agenda
 
 | Time | Block | Material |
 |---|---|---|
-| 0:00 | Setup and orientation | `00_setup.md` |
-| 0:20 | From one command to a script, loops and GNU Parallel | `building_first_script.md` |
-| 1:35 | Break | |
-| 1:45 | Trimming pairs and aligning reads | `alignment_bwa_mem2.md` (Step 4, GNU Parallel alignment, is optional) |
-| 2:45 | Break | |
-| 2:55 | A restartable per-sample pipeline | `pipeline_combined.md` |
-| 3:25 | Scaling out with a Slurm job array | `pipeline_combined.md` (Slurm section) |
-| 3:50 | Wrap-up and questions | |
-
-Timings are a draft and need to be confirmed after a test run on Nova.
+| 1:00 PM | Setup and orientation | `01_setup.md` |
+| 1:20 PM | From one command to a script, loops and GNU Parallel | `02_building_first_script.md` |
+| 2:35 PM | Break | |
+| 2:45 PM | Aligning reads | `03_alignment_bwa.md` (Step 4, GNU Parallel alignment, is optional) |
+| 3:45 PM | Break | |
+| 3:55 PM | A restartable per-sample pipeline | `04_pipeline_combined.md` |
+| 4:25 PM | Running on Slurm: one batch job and a job array | `04_pipeline_combined.md` (Slurm sections) |
+| 4:50 PM | Wrap-up and questions | |
+| 5:00 PM | End | |
 
 ## Prerequisites
 
 - A Nova account with access to OnDemand (or ssh) and a terminal.
-- Basic command-line use (`ls`, `cd`, `pwd`). Variables and loops are taught in the first lesson.
+- Basic command-line familiarity (`ls`, `cd`, `pwd`) and understanding of variables and loops is.
 
-## Run everything from the project root
+## Getting started
 
-All scripts use relative paths (`01_data/`, `00_scripts/`, `logs/`), so run them from the top-level project directory, not from inside `00_scripts/`.
+Follow `01_setup.md`. It takes you from logging in to Nova OnDemand to a project folder with the data and the tools ready.
+
+## What is in this repository
+
+| File or folder | What it is |
+|---|---|
+| `01_setup.md` | Log in, get a session, clone this repository, copy the data, check the tools |
+| `02_building_first_script.md` | Lesson 1: fastp, loops and GNU Parallel |
+| `03_alignment_bwa.md` | Lesson 2: align reads with bwa and samtools |
+| `04_pipeline_combined.md` | Lesson 3: one pipeline for all samples, GNU Parallel, Slurm batch job and job array |
+| `exercises.md` | One short exercise per lesson |
+| `cheatsheet.md` | The commands used in the workshop on one page |
+| `00_scripts/` | A copy of every script from the lessons (`01_fastp.sh` to `12_pipeline_array.sh`) |
+| `assets/` | Screenshots used in the setup |
+
+## Run everything from the project folder
+
+All scripts use relative paths (`01_data/`, `00_scripts/`, `logs/`), so run them from the project folder (`/work/short_term/$USER`, the folder that has `01_data/` and `02_reference/`), not from inside `00_scripts/` and not from inside the cloned `isu-bash-pipeline-2026` folder. See `01_setup.md`.
+
+## License
+
+MIT License. See `LICENSE`.
