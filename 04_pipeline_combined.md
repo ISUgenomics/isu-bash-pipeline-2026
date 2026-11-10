@@ -128,10 +128,15 @@ Explanation of the new pieces:
 - **Write to `tmp_` / `.tmp`, then `mv`**: if a step is killed halfway, the partial file has a temporary name and is not mistaken for a finished result on the next run. (fastp decides on gzip output from the `.gz` ending, so the temporary fastp names keep it.)
 - `set -euo pipefail` stops the script if `bwa` fails, even though it sits in a pipe with `samtools sort`.
 
-Make it executable and test on **one** sample first:
+Make it executable:
 
 ```bash
 chmod +x 00_scripts/09_pipeline_sample.sh
+```
+
+Test it on **one** sample first:
+
+```bash
 time ./00_scripts/09_pipeline_sample.sh bio_sample_01
 ```
 
@@ -148,11 +153,10 @@ sys     0m1.8s
 </pre>
 </details>
 
-Check the results:
+Check the output folders:
 
 ```bash
 ls 10_fastp_paired 11_alignment logs
-cat 11_alignment/bio_sample_01.flagstat.txt
 ```
 
 <details>
@@ -166,7 +170,18 @@ bio_sample_01.flagstat.txt  bio_sample_01.sorted.bam  bio_sample_01.sorted.bam.b
 
 logs:
 bio_sample_01_bwa.log  bio_sample_01_fastp.log
+</pre>
+</details>
 
+Look at the summary of the alignment:
+
+```bash
+cat 11_alignment/bio_sample_01.flagstat.txt
+```
+
+<details>
+<summary>Output</summary>
+<pre>
 735716 + 0 in total (QC-passed reads + QC-failed reads)
 729490 + 0 primary
 0 + 0 secondary
@@ -263,10 +278,15 @@ parallel --dry-run -j2 ./00_scripts/09_pipeline_sample.sh {} ::: bio_sample_01 b
 </pre>
 </details>
 
-Make it executable and run:
+Make it executable:
 
 ```bash
 chmod +x 00_scripts/10_run_pipeline.sh
+```
+
+Run it:
+
+```bash
 time ./00_scripts/10_run_pipeline.sh
 ```
 
@@ -319,10 +339,15 @@ List any failed samples (no output means that all samples worked):
 awk -F'\t' 'NR>1 && $7!=0 {print $9}' logs/pipeline_joblog.tsv
 ```
 
-Then check the BAMs and per-sample logs:
+Then check the BAM files:
 
 ```bash
 ls -lh 11_alignment/*.sorted.bam
+```
+
+And the percentage of mapped reads for each sample:
+
+```bash
 grep "mapped (" 11_alignment/*.flagstat.txt
 ```
 
@@ -435,6 +460,11 @@ GNU Parallel runs all samples inside **one** allocation. With a Slurm job array,
 
 ```bash
 ls 01_data/*_R1.fastq.gz | xargs -n1 basename | sed 's/_R1.fastq.gz$//' > samples.txt
+```
+
+Look at the list:
+
+```bash
 cat samples.txt
 ```
 
@@ -494,7 +524,15 @@ echo "Task $SLURM_ARRAY_TASK_ID: sample $SAMPLE on $(hostname) with $THREADS thr
 
 ```bash
 chmod +x 00_scripts/12_pipeline_array.sh
+```
+
+```bash
 mkdir -p logs
+```
+
+Submit one task for each line of `samples.txt`:
+
+```bash
 sbatch --array=1-$(wc -l < samples.txt) 00_scripts/12_pipeline_array.sh
 ```
 
@@ -509,8 +547,15 @@ Optional: limit how many tasks run at once with `%`, e.g. `--array=1-5%2` runs a
 
 **Step 4: monitor**
 
+See your jobs:
+
 ```bash
 squeue -u $USER
+```
+
+When the tasks are done, see how they ended (use your own job ID):
+
+```bash
 sacct -j <jobid> --format=JobID,JobName,State,Elapsed,MaxRSS,ExitCode
 ```
 
