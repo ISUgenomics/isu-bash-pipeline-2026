@@ -44,10 +44,10 @@ Make runnable: `chmod +x script.sh`. Run: `time ./script.sh`.
 fastp -i R1.fq.gz -I R2.fq.gz -o out_R1.fq.gz -O out_R2.fq.gz -h s.html -j s.json -w 4
 
 # Index reference (once)
-bwa-mem2 index 00_ref/genome.fa
+bwa index 02_reference/b73_chr1_150000001-151000000.fasta
 
-# Align, sort, index (bwa-mem2 + samtools)
-bwa-mem2 mem -t 8 -R '@RG\tID:s\tSM:s\tPL:ILLUMINA' ref.fa R1.fq.gz R2.fq.gz 2> s.log \
+# Align, sort, index (bwa + samtools)
+bwa mem -t 8 -R '@RG\tID:s\tSM:s\tPL:ILLUMINA' ref.fa R1.fq.gz R2.fq.gz 2> s.log \
   | samtools sort -@ 2 -o s.sorted.bam -
 samtools index s.sorted.bam
 samtools flagstat s.sorted.bam
@@ -65,7 +65,8 @@ parallel --resume-failed -j4 --joblog logs/joblog.tsv cmd {} ::: a b c
 |---|---|
 | `{}` | the input |
 | `{/}` | basename (no directory) |
-| `{/..}` | basename, two extensions removed (`x.fastq.gz` becomes `x`) |
+| `{/.}` | basename, one extension removed (`x.fastq.gz` becomes `x.fastq`) |
+| `--rpl '{sample} s:.*/::; s/_R1\.fastq\.gz$//'` | our own placeholder `{sample}`: the sample name from an R1 path (`01_data/s1_R1.fastq.gz` becomes `s1`) |
 
 Quote the command template with `'...'` so parallel, not your shell, fills in the placeholders. Export variables and functions used inside: `export VAR`, `export -f func`.
 
@@ -95,9 +96,9 @@ fi
 ## Checking results
 
 ```bash
-grep -L "Real time" logs/*_bwa_mem2.log        # logs missing the finish line (possible failures)
+grep -L "Real time" logs/*bwa*.log               # logs missing the finish line (possible failures)
 awk -F'\t' 'NR>1 && $7!=0 {print $9}' logs/pipeline_joblog.tsv   # failed jobs from the joblog
-ls -lh 03_alignment/*.bam                      # BAMs exist and have a plausible size
+ls -lh 11_alignment/*.bam                      # BAMs exist and have a plausible size
 ```
 
 ## Common problems
