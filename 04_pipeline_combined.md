@@ -365,10 +365,10 @@ So far we ran `10_run_pipeline.sh` by hand in our interactive session. If the se
 This is a small wrapper around the launcher. Create the script using `touch`.
 
 ```bash
-touch 00_scripts/11_pipeline_single_job.sh
+touch 00_scripts/11_pipeline_single_job.slurm
 ```
 
-Then open the new file `00_scripts/11_pipeline_single_job.sh` in the editor and add:
+Then open the new file `00_scripts/11_pipeline_single_job.slurm` in the editor and add:
 
 ```bash
 #!/usr/bin/env bash
@@ -401,15 +401,11 @@ echo "Job $SLURM_JOB_ID on $(hostname): $JOBS samples at a time, $THREADS thread
 Submit it. The `logs/` directory must exist before submitting:
 
 ```bash
-chmod +x 00_scripts/11_pipeline_single_job.sh
-```
-
-```bash
 mkdir -p logs
 ```
 
 ```bash
-sbatch 00_scripts/11_pipeline_single_job.sh
+sbatch 00_scripts/11_pipeline_single_job.slurm
 ```
 
 <details>
@@ -449,7 +445,7 @@ bio_sample_01
 
 The job log, the joblog and the BAM files are the same as before. Use the same checks as above (`cut -f1,4,7,9 logs/pipeline_joblog.tsv`). In our test all 5 samples ended with exit code `0`, and the job took about 4.5 minutes. The job waited in the queue first, so the total time depends on how busy the cluster is.
 
-- To change the number of samples at a time, set `JOBS` when you submit: `sbatch --export=ALL,JOBS=5 --cpus-per-task=15 00_scripts/11_pipeline_single_job.sh`. With 15 CPUs and 5 samples at a time: 15 / 5 - 2 = 1 thread per sample.
+- To change the number of samples at a time, set `JOBS` when you submit: `sbatch --export=ALL,JOBS=5 --cpus-per-task=15 00_scripts/11_pipeline_single_job.slurm`. With 15 CPUs and 5 samples at a time: 15 / 5 - 2 = 1 thread per sample.
 - If a sample fails, fix the problem and submit the same script again. Finished samples are skipped.
 
 ### Alternative: a Slurm job array
@@ -482,10 +478,10 @@ bio_sample_05
 **Step 2: the array script.** Create the script using `touch`.
 
 ```bash
-touch 00_scripts/12_pipeline_array.sh
+touch 00_scripts/12_pipeline_array.slurm
 ```
 
-Then open the new file `00_scripts/12_pipeline_array.sh` in the editor and add:
+Then open the new file `00_scripts/12_pipeline_array.slurm` in the editor and add:
 
 ```bash
 #!/usr/bin/env bash
@@ -523,17 +519,13 @@ echo "Task $SLURM_ARRAY_TASK_ID: sample $SAMPLE on $(hostname) with $THREADS thr
 **Step 3: submit.** The `logs/` directory must exist before submitting, because Slurm opens the output files before the script starts:
 
 ```bash
-chmod +x 00_scripts/12_pipeline_array.sh
-```
-
-```bash
 mkdir -p logs
 ```
 
 Submit one task for each line of `samples.txt`:
 
 ```bash
-sbatch --array=1-$(wc -l < samples.txt) 00_scripts/12_pipeline_array.sh
+sbatch --array=1-$(wc -l < samples.txt) 00_scripts/12_pipeline_array.slurm
 ```
 
 <details>
@@ -585,14 +577,14 @@ JobID           JobName      State    Elapsed     MaxRSS ExitCode
 **Step 5: rerun only failures.** Because finished steps are skipped, rerunning is cheap. Resubmit just the failed task indices:
 
 ```bash
-sbatch --array=2,4 00_scripts/12_pipeline_array.sh
+sbatch --array=2,4 00_scripts/12_pipeline_array.slurm
 ```
 
 In our test, tasks 2 and 4 had already finished, so both only printed "output exists, skipping" and ended after about 5 seconds.
 
 **Which one should I use?**
 
-| | GNU Parallel by hand (`10_run_pipeline.sh`) | One batch job (`11_pipeline_single_job.sh`) | Slurm array (`12_pipeline_array.sh`) |
+| | GNU Parallel by hand (`10_run_pipeline.sh`) | One batch job (`11_pipeline_single_job.slurm`) | Slurm array (`12_pipeline_array.slurm`) |
 |---|---|---|---|
 | Runs | In your interactive session | In the background, as one job | In the background, one job per sample |
 | Resources | The session you asked for | One request shared by all samples | Separate request per sample |

@@ -102,7 +102,7 @@ ls
 - `README.md` has the agenda of the workshop.
 - `01_setup.md` is this page. `02_building_first_script.md`, `03_alignment_bwa.md` and `04_pipeline_combined.md` are the three lessons, in order.
 - `cheatsheet.md` is a short list of the commands we use, and `exercises.md` has the exercises.
-- `00_scripts/` has a copy of every script from the lessons (`01_fastp.sh` to `12_pipeline_array.sh`). We write the scripts ourselves in the lessons. If one of yours does not work, you can compare it with the copy here, or copy it into your own `00_scripts/` folder.
+- `00_scripts/` has a copy of every script from the lessons (`01_fastp.sh` to `12_pipeline_array.slurm`). We write the scripts ourselves in the lessons. If one of yours does not work, you can compare it with the copy here, or copy it into your own `00_scripts/` folder.
 - `assets/` holds the screenshots, and `LICENSE` is the license.
 
 You can open the lessons in VS Code Server to read along.

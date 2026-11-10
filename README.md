@@ -42,7 +42,7 @@ Follow `01_setup.md`. It takes you from logging in to Nova OnDemand to a project
 | `04_pipeline_combined.md` | Lesson 3: one pipeline for all samples, GNU Parallel, Slurm batch job and job array |
 | `exercises.md` | One short exercise per lesson |
 | `cheatsheet.md` | The commands used in the workshop on one page |
-| `00_scripts/` | A copy of every script from the lessons (`01_fastp.sh` to `12_pipeline_array.sh`) |
+| `00_scripts/` | A copy of every script from the lessons (`01_fastp.sh` to `12_pipeline_array.slurm`) |
 | `assets/` | Screenshots used in the setup |
 
 ## Run everything from the project folder
