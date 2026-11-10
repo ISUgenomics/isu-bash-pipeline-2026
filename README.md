@@ -40,7 +40,7 @@ Iowa State University, Ames, IA
 ## Prerequisites
 
 - A Nova account with access to OnDemand (or ssh) and a terminal.
-- Basic command-line familiarity (`ls`, `cd`, `pwd`) and understanding of variables and loops is.
+- Basic command-line familiarity (`ls`, `cd`, `pwd`) and understanding of variables and loops.
 
 ## Getting started
 
