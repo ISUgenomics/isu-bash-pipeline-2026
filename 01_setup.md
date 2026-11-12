@@ -27,6 +27,8 @@ pwd
 
    Go to the workshop work area:
 
+# TODO: This needs to be updated. 
+
 ```bash
 cd /work/short_term
 ```
