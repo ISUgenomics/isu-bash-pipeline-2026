@@ -2,7 +2,7 @@
 
 One short exercise per lesson. Try each on your own first, then open the solution. Run everything from the project root (see `README.md`).
 
-## Exercise 0: Where am I? (`00_setup.md`, about 3 minutes)
+## Exercise 0: Where am I? (`01_setup.md`, about 3 minutes)
 
 Using only commands from the setup lesson, confirm that:
 
@@ -22,7 +22,7 @@ ls 01_data | wc -l       # 10
 
 </details>
 
-## Exercise 1: Count reads per sample (`building_first_script.md`, about 10 minutes)
+## Exercise 1: Count reads per sample (`02_building_first_script.md`, about 10 minutes)
 
 Write `00_scripts/ex1_count_reads.sh` that loops over the **R1** files in `01_data/` and prints one line per sample: the sample name, a tab, and the number of reads. A FASTQ record is 4 lines, so reads = lines / 4.
 
@@ -61,7 +61,7 @@ Cross-check: the read count should match the `Read1 before filtering: total read
 
 </details>
 
-## Exercise 2: Mapping rate summary (`alignment_bwa_mem2.md`, about 10 minutes)
+## Exercise 2: Mapping rate summary (`03_alignment_bwa.md`, about 10 minutes)
 
 Write `00_scripts/ex2_mapped_pct.sh` that loops over the sorted BAM files from the alignment step and prints the sample name and the percentage of reads that mapped, one line per sample. Use `samtools flagstat`.
 
@@ -78,7 +78,7 @@ set -euo pipefail
 module purge
 module load samtools
 
-for bam in 03_alignment/*.sorted.bam
+for bam in 08_alignment/*.sorted.bam
 do
   sample_id=$(basename "$bam" .sorted.bam)
   pct=$(samtools flagstat "$bam" | grep -m1 " mapped (" | sed 's/.*(\([0-9.]*\)%.*/\1/')
@@ -88,28 +88,28 @@ done
 
 - `grep -m1` keeps only the first match, which is the "mapped" line (not "primary mapped").
 - `sed` keeps just the number inside the parentheses.
-- If a sample is far below the others, look at its fastp and bwa-mem2 logs first.
+- If a sample is far below the others, look at its fastp and bwa logs first.
 
 </details>
 
-## Exercise 3: Predict, then restart (`pipeline_combined.md`, about 10 minutes)
+## Exercise 3: Predict, then restart (`04_pipeline_combined.md`, about 10 minutes)
 
 1. Make sure the whole pipeline has finished (all five samples done).
 2. Delete **one** sample's BAM and its index:
 
    ```bash
-   rm 03_alignment/bio_sample_03.sorted.bam 03_alignment/bio_sample_03.sorted.bam.bai
+   rm 11_alignment/bio_sample_03.sorted.bam 11_alignment/bio_sample_03.sorted.bam.bai
    ```
 
 3. **Before running anything**, write down which steps you expect to run for each sample when you start the launcher again.
-4. Run `./00_scripts/11_run_pipeline.sh` and compare with your prediction.
+4. Run `./00_scripts/10_run_pipeline.sh` and compare with your prediction.
 
 Extension: with a 16-core allocation, which `JOBS` and `THREADS` would you choose? Remember the cores used are about `JOBS x (THREADS + 2)`.
 
 <details>
 <summary>Solution</summary>
 
-- `bio_sample_03`: fastp is **skipped** (trimmed reads still exist) and bwa-mem2 **runs** (BAM is missing).
+- `bio_sample_03`: fastp is **skipped** (trimmed reads still exist) and bwa **runs** (BAM is missing).
 - All other samples: both steps **skipped**.
 - The output messages should show exactly that (`output exists, skipping` for 9 of the 10 step checks), and the whole run should be quick, because only one alignment is redone.
 
@@ -117,15 +117,15 @@ Extension: `JOBS=3 THREADS=3` uses 3 x (3 + 2) = 15 cores, which fits in 16. `JO
 
 </details>
 
-## Exercise 4: Rerun selected array tasks (`pipeline_combined.md`, Slurm section, about 5 minutes)
+## Exercise 4: Rerun selected array tasks (`04_pipeline_combined.md`, Slurm section, about 5 minutes)
 
-Using the sample list `samples.txt` and `12_pipeline_array.sh`, submit an array that processes **only samples 2 and 4**, and at most one at a time. Then check how the tasks finished. If one is still queued and you change your mind, cancel it.
+Using the sample list `samples.txt` and `12_pipeline_array.slurm`, submit an array that processes **only samples 2 and 4**, and at most one at a time. Then check how the tasks finished. If one is still queued and you change your mind, cancel it.
 
 <details>
 <summary>Solution</summary>
 
 ```bash
-sbatch --array=2,4%1 00_scripts/12_pipeline_array.sh
+sbatch --array=2,4%1 00_scripts/12_pipeline_array.slurm
 squeue -u $USER
 sacct -j <jobid> --format=JobID,State,Elapsed,ExitCode
 scancel <jobid>_4        # cancel a single array task (use scancel <jobid> to cancel all)
