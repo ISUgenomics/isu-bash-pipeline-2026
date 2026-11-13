@@ -76,9 +76,9 @@ Quote the command template with `'...'` so parallel, not your shell, fills in th
 
 | Task | Command |
 |---|---|
-| Interactive session | `salloc --cpus-per-task=8 --mem=16G --time=04:00:00` |
-| Submit | `sbatch script.sh` |
-| Submit array | `sbatch --array=1-5 script.sh` (limit running: `1-5%2`; select: `2,4`) |
+| Interactive session | `salloc --account=short_term --partition=interactive --cpus-per-task=10 --mem=16G --time=04:00:00` |
+| Submit | `sbatch 00_scripts/11_pipeline_single_job.slurm` |
+| Submit array | `sbatch --array=1-5 00_scripts/12_pipeline_array.slurm` (limit running: `1-5%2`; select: `2,4`) |
 | My jobs | `squeue -u $USER` |
 | Finished job details | `sacct -j <jobid> --format=JobID,State,Elapsed,MaxRSS,ExitCode` |
 | Cancel | `scancel <jobid>` (one array task: `scancel <jobid>_<task>`) |
